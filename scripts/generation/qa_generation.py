@@ -1,10 +1,10 @@
 import json
 from pathlib import Path
-from config.config import openai_client
+from config.config import openai_client, MODEL_NAME
 from scripts.utils.logger import setup_logger
 from scripts.utils.prompt_loader import load_prompts
 
-logger = setup_logger("ocr_runner")
+logger = setup_logger("qa_generation")
 
 
 def generate_qa_from_text(text: str, qa_prompt: str, debug: bool) -> list:
@@ -19,7 +19,7 @@ def generate_qa_from_text(text: str, qa_prompt: str, debug: bool) -> list:
         )
         return []
     response = openai_client.chat.completions.create(
-        model="gpt-4.1-mini",
+        model=MODEL_NAME,
         messages=[
             {"role": "system", "content": qa_prompt},
             {"role": "user", "content": text},

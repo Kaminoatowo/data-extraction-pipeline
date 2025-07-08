@@ -16,6 +16,7 @@ OUTPUT_DIR = BASE_DIR / "data"
 
 MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4o-mini")  # Default to gpt-4o-mini if not set
 
 # Initialize OpenAI client (replace with your method of auth)
 if not OPENAI_API_KEY:

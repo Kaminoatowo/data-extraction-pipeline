@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from scripts.utils.logger import setup_logger
 
-logger = setup_logger("ocr_runner")
+logger = setup_logger("equation_formatting")
 
 
 def format_equation_conversations(json_file: Path, output_path: Path):

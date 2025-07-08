@@ -1,10 +1,10 @@
 import json
 from pathlib import Path
-from config.config import openai_client
+from config.config import openai_client, MODEL_NAME
 from scripts.utils.logger import setup_logger
 from scripts.utils.prompt_loader import load_prompts
 
-logger = setup_logger("ocr_runner")
+logger = setup_logger("equation_extraction")
 
 
 def extract_equations_from_text(text: str, prompt: str, debug: bool) -> dict:
@@ -18,7 +18,7 @@ def extract_equations_from_text(text: str, prompt: str, debug: bool) -> dict:
         )
         return {}
     response = openai_client.chat.completions.create(
-        model="gpt-4.1-mini",
+        model=MODEL_NAME,
         messages=[
             {"role": "system", "content": prompt},
             {"role": "user", "content": text},

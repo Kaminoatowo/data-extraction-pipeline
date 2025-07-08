@@ -8,8 +8,8 @@ from scripts.ocr.ocr_runner import batch_ocr
 from scripts.generation.cpt_rag_generation import generate_outputs_from_ocr_txt
 from scripts.equations.equation_extraction import generate_equation_jsons
 from scripts.equations.equation_formatting import format_equation_conversations
-from scripts.fine_tuning.synthetic_data import generate_synthetic_finetune_dataset
 from scripts.generation.qa_generation import generate_qa_pairs
+from scripts.generation.synthetic_data import generate_synthetic_data
 
 logger = setup_logger("pipeline")
 
@@ -85,13 +85,22 @@ def run_pipeline(args):
             prompts_path=Path("config/prompts.yaml"),
             debug=DEBUG_MODE,  # or wherever your prompts live
         )
+        logger.info(
+            "RAG and CPT outputs generated and saved to %s",
+            output_dir / "output_rag",
+        )
 
     if args.run_equations:
+        logger.info("Running equation extraction...")
         generate_equation_jsons(
             ocr_txt_dir=ocr_output_dir,
             output_dir=output_dir / "equations_json",
             prompts_path=Path("config/prompts.yaml"),
             debug=DEBUG_MODE,
+        )
+        logger.info(
+            "Equation JSONs generated and saved to %s",
+            output_dir / "equations_json",
         )
 
         json_dir = output_dir / "equations_json"
@@ -100,14 +109,17 @@ def run_pipeline(args):
             format_equation_conversations(
                 json_file, formatted_dir / f"{json_file.stem}.json"
             )
+        logger.info("Formatted equations saved to %s", formatted_dir)
 
     if args.run_synth:
-        generate_synthetic_finetune_dataset(
-            formatted_convos_dir=output_dir / "formatted_equations",
-            output_jsonl_path=output_dir
-            / "synthetic_dataset"
-            / "equation_finetune_data.jsonl",
+        logger.info("Starting synthetic data generation...")
+        generate_synthetic_data(
+            input_folder=output_dir / "output_rag",
+            output_file=output_dir / "synthetic_data.jsonl",
+            prompts_path=Path("config/prompts.yaml"),
+            debug=DEBUG_MODE,
         )
+        logger.info("Synthetic data generation complete.")
 
     if args.run_qa:
         generate_qa_pairs(

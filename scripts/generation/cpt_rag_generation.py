@@ -1,12 +1,11 @@
 import os
 import glob
 from pathlib import Path
-from openai import OpenAI
-from config.config import openai_client
+from config.config import openai_client, MODEL_NAME
 from scripts.utils.logger import setup_logger
 from scripts.utils.prompt_loader import load_prompts  # adjust path as needed
 
-logger = setup_logger("ocr_runner")
+logger = setup_logger("cpt_rag_generation")
 
 
 def load_txt_files(txt_folder: Path) -> dict:
@@ -36,7 +35,7 @@ def generate_rag_output(
         logger.debug(f"Input text length: {len(text)} characters")
         return "Debug mode enabled, skipping RAG generation."
     rag_response = openai_client.chat.completions.create(
-        model="gpt-4.1-mini",
+        model=MODEL_NAME,
         messages=[rag_message, {"role": "user", "content": text}],
         temperature=0.5,
     )
@@ -60,7 +59,7 @@ def generate_cpt_output(
         logger.debug(f"Input text length: {len(text)} characters")
         return "Debug mode enabled, skipping CPT generation."
     cpt_response = openai_client.chat.completions.create(
-        model="gpt-4.1-mini",
+        model=MODEL_NAME,
         messages=[cpt_message, {"role": "user", "content": text}],
         temperature=0.5,
     )
