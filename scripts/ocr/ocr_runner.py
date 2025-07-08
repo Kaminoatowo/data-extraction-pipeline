@@ -32,7 +32,6 @@ def run_mistral_ocr(model, pdf_path: Path, debug: bool) -> str:
     Replace this with the actual call to the model.
     """
     logger.info(f"Running OCR on: {pdf_path}")
-    print(f"Debug mode: {debug}")
     if debug:
         logger.debug(f"Debug mode is enabled. Processing file: {pdf_path}")
         return "Debug mode is enabled. No OCR performed."

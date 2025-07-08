@@ -35,20 +35,19 @@ def extract_equations_from_text(text: str, prompt: str, debug: bool) -> dict:
 
 
 def generate_equation_jsons(
-    ocr_txt_dir: Path, output_dir: Path, prompts_path: str, debug: bool = False
+    input_txt: Path, output_dir: Path, prompts_path: str, debug: bool = False
 ):
     """
     Process all OCR .txt files and generate JSON files with extracted equations.
     """
-    logger.info(f"Generating equation JSONs from {ocr_txt_dir}")
+    logger.info(f"Generating equation JSONs from {input_txt}")
     output_dir.mkdir(parents=True, exist_ok=True)
     prompts = load_prompts(prompts_path)
-    txt_files = sorted(ocr_txt_dir.glob("*.txt"))
+    txt_files = sorted(input_txt.glob("*.txt"))
 
     for txt_file in txt_files:
         with txt_file.open("r", encoding="utf-8") as f:
             text = f.read()
-
         result = extract_equations_from_text(
             text, prompts["equation_extraction_prompt"], debug
         )

@@ -1,6 +1,6 @@
 import argparse
 from pathlib import Path
-from config.config import DEBUG_MODE
+import shutil
 
 from scripts.utils.logger import setup_logger
 from scripts.pdf.pdf_splitter import run_pdf_split
@@ -12,13 +12,67 @@ from scripts.generation.qa_generation import generate_qa_pairs
 from scripts.generation.synthetic_data import generate_synthetic_data
 
 logger = setup_logger("pipeline")
+DEBUG_MODE = False  # Default debug mode is off
+
+
+def clean_all_files(work_dir, output_dir):
+    """Clean all generated files from the pipeline directories."""
+    directories_to_clean = [
+        work_dir / "pdfs",
+        work_dir / "ocr_output",
+        work_dir / "texts",
+        output_dir / "output_rag",
+        output_dir / "output_cpt",
+        output_dir / "equations_json",
+        output_dir / "formatted_equations",
+        output_dir / "fine_tuning_equations",
+        output_dir / "qa_pairs",
+        output_dir,  # For files like synthetic_data.jsonl, extracted_text.txt
+    ]
+
+    # Prompt for confirmation
+    response = (
+        input("Are you sure you want to delete all generated files? (yes/no): ")
+        .strip()
+        .lower()
+    )
+
+    if response not in ["yes", "y"]:
+        logger.info("Cleanup cancelled by user.")
+        return
+
+    files_deleted = 0
+
+    for directory in directories_to_clean:
+        if directory.exists():
+            logger.info("Cleaning files in directory: %s", directory)
+
+            # Delete all files in the directory (recursively)
+            for file_path in directory.rglob("*"):
+                if file_path.is_file():
+                    # Delete specific file types
+                    if file_path.suffix.lower() in [".pdf", ".txt", ".json", ".jsonl"]:
+                        file_path.unlink()
+                        files_deleted += 1
+                        logger.debug("Deleted file: %s", file_path)
+
+    logger.info("Cleanup completed. Deleted %d files.", files_deleted)
 
 
 def run_pipeline(args):
+    # Handle clean_all option first
+    if args.clean_all:
+        work_dir = Path(args.work_dir)
+        output_dir = Path(args.output_dir)
+        clean_all_files(work_dir, output_dir)
+        return
+
     # Handle debug mode configuration
     if args.debug_mode:
         DEBUG_MODE = True
         logger.info("Debug mode enabled: %s", DEBUG_MODE)
+    else:
+        DEBUG_MODE = False
 
     work_dir = Path(args.work_dir)
     split_output_dir = work_dir / "pdfs"
@@ -30,10 +84,11 @@ def run_pipeline(args):
 
     logger.info("Starting pipeline with input PDF: %s", input_path)
 
-    if args.split_only:
+    if args.split_only or args.run_split:
         logger.info("Running split-only mode.")
         run_pdf_split(input_path, split_output_dir, args.pages_per_chunk)
-        return
+        if args.split_only:
+            return
 
     ocr_output_dir = work_dir / "ocr_output"
 
@@ -93,7 +148,7 @@ def run_pipeline(args):
     if args.run_equations:
         logger.info("Running equation extraction...")
         generate_equation_jsons(
-            ocr_txt_dir=ocr_output_dir,
+            input_txt=output_dir / "output_rag",
             output_dir=output_dir / "equations_json",
             prompts_path=Path("config/prompts.yaml"),
             debug=DEBUG_MODE,
@@ -105,9 +160,11 @@ def run_pipeline(args):
 
         json_dir = output_dir / "equations_json"
         formatted_dir = output_dir / "formatted_equations"
+        fine_tuning_equations_dir = output_dir / "fine_tuning_equations"
         for json_file in json_dir.glob("*.json"):
             format_equation_conversations(
-                json_file, formatted_dir / f"{json_file.stem}.json"
+                json_file,
+                formatted_dir / f"{json_file.stem}.json",
             )
         logger.info("Formatted equations saved to %s", formatted_dir)
 
@@ -134,9 +191,7 @@ def run_pipeline(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="LLM Pipeline from PDF to QA.")
-    parser.add_argument(
-        "--input_pdf", type=str, required=True, help="Path to the input PDF file."
-    )
+    parser.add_argument("--input_pdf", type=str, help="Path to the input PDF file.")
     parser.add_argument(
         "--output_dir",
         type=str,
@@ -188,16 +243,24 @@ if __name__ == "__main__":
         help="Enable debug mode. When enabled, disables gpt APIs.",
     )
 
+    parser.add_argument(
+        "--clean_all",
+        action="store_true",
+        help="Delete all generated files (PDFs, TXT, JSON) from output directories. Prompts for confirmation.",
+    )
+
     parser.add_argument("--run_all", action="store_true", help="Run the full pipeline.")
 
     args = parser.parse_args()
 
     if args.run_all:
+        args.run_split = True
         args.run_ocr = True
         args.run_split = True
         args.run_rag = True
         args.run_cpt = True
         args.run_equations = True
         args.run_qa = True
+        args.run_synth = True
 
     run_pipeline(args)

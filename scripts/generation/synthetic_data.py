@@ -82,7 +82,6 @@ def generate_synthetic_data(
         total=total_batches,
         desc="Generating Synthetic Data",
     ):
-        print(f"\nbatch {batch}, batch_idx: {batch_idx}, BATCH_SIZE: {BATCH_SIZE}")
         prompt = build_prompt(
             prompt_synth["synthetic_data_extraction"], batch, batch_idx * BATCH_SIZE
         )

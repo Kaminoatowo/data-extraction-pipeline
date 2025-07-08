@@ -1,10 +1,26 @@
 import json
 from pathlib import Path
+import re
 from config.config import openai_client, MODEL_NAME
 from scripts.utils.logger import setup_logger
 from scripts.utils.prompt_loader import load_prompts
 
 logger = setup_logger("qa_generation")
+
+
+def extract_qa_pairs(text):
+    pairs = []
+    qa_chunks = re.findall(
+        r"(Q\d?:\s*.+?\nA\d?:\s*.+?)(?=\nQ\d?:|\Z)", text.strip(), re.DOTALL
+    )
+    for chunk in qa_chunks:
+        q_match = re.search(r"Q\d?:\s*(.+)", chunk)
+        a_match = re.search(r"A\d?:\s*(.+)", chunk)
+        if q_match and a_match:
+            question = q_match.group(1).strip()
+            answer = a_match.group(1).strip()
+            pairs.append({"prompt": question, "response": answer})
+    return pairs
 
 
 def generate_qa_from_text(text: str, qa_prompt: str, debug: bool) -> list:
@@ -26,10 +42,10 @@ def generate_qa_from_text(text: str, qa_prompt: str, debug: bool) -> list:
         ],
         temperature=0.7,
     )
-
     try:
-        content = response.choices[0].message.content
-        return json.loads(content)
+        content = response.choices[0].message.content.strip()
+        qa_pairs = extract_qa_pairs(content)
+        return qa_pairs
     except json.JSONDecodeError as e:
         logger.error(f"Failed to parse Q&A JSON from model: {e}")
         return []
