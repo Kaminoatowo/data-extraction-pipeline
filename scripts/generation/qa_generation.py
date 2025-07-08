@@ -17,7 +17,7 @@ def generate_qa_from_text(text: str, qa_prompt: str, debug: bool) -> list:
         logger.debug(
             f"Debug mode enabled, skipping Q&A generation for text of length {len(text)}"
         )
-        return "No Q&A generated in debug mode."
+        return []
     response = openai_client.chat.completions.create(
         model="gpt-4.1-mini",
         messages=[
