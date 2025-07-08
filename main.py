@@ -45,7 +45,7 @@ def run_pipeline(args):
             )
             return
 
-        ocr_txt_paths = batch_ocr(pdf_chunks, ocr_output_dir)
+        ocr_txt_paths = batch_ocr(pdf_chunks, ocr_output_dir, debug=DEBUG_MODE)
 
         if ocr_txt_paths:
             logger.info("OCR completed. Text files saved to: %s", ocr_output_dir)
@@ -98,7 +98,9 @@ def run_pipeline(args):
             ocr_txt_dir=ocr_output_dir,
             output_rag_dir=output_dir / "output_rag",
             output_cpt_dir=output_dir / "output_cpt",
-            prompts_path=Path("config/prompts.yaml"),  # or wherever your prompts live
+            prompts_path=Path(
+                "config/prompts.yaml", debug=DEBUG_MODE
+            ),  # or wherever your prompts live
         )
 
     # # Step 5: Equation Extraction

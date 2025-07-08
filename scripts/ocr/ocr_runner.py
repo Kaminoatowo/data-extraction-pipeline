@@ -26,12 +26,16 @@ def load_mistral_ocr_model():
     return mistral_client
 
 
-def run_mistral_ocr(model, pdf_path: Path) -> str:
+def run_mistral_ocr(model, pdf_path: Path, debug: bool) -> str:
     """
     Runs OCR on a single PDF file using Mistral OCR model.
     Replace this with the actual call to the model.
     """
     logger.info(f"Running OCR on: {pdf_path}")
+    print(f"Debug mode: {debug}")
+    if debug:
+        logger.debug(f"Debug mode is enabled. Processing file: {pdf_path}")
+        return "Debug mode is enabled. No OCR performed."
     uploaded_pdf = model.files.upload(
         file={
             "file_name": pdf_path,
@@ -52,7 +56,9 @@ def run_mistral_ocr(model, pdf_path: Path) -> str:
     return ocr_response
 
 
-def ocr_pdf_file(pdf_path: Path, output_dir: Path, model=None) -> Path:
+def ocr_pdf_file(
+    pdf_path: Path, output_dir: Path, model=None, debug: bool = False
+) -> Path:
     """
     OCRs a single PDF file and writes the output text to a .txt file.
     """
@@ -62,10 +68,14 @@ def ocr_pdf_file(pdf_path: Path, output_dir: Path, model=None) -> Path:
     if model is None:
         model = load_mistral_ocr_model()
 
-    extracted_text = run_mistral_ocr(model, str(pdf_path))
+    extracted_text = run_mistral_ocr(model, str(pdf_path), debug)
     output_txt_path = output_dir / f"{pdf_path.stem}.txt"
 
     with open(output_txt_path, "w", encoding="utf-8") as f:
+        if debug:
+            f.write("Debug mode is enabled. No OCR performed.\n")
+            logger.debug("Debug mode is enabled. No OCR performed.")
+            return output_txt_path
         for i, page in enumerate(extracted_text.pages):
             page_text = str(page.markdown)
             f.write(f"\n\n# Page {i + 1}\n{page_text}")
@@ -74,7 +84,9 @@ def ocr_pdf_file(pdf_path: Path, output_dir: Path, model=None) -> Path:
     return output_txt_path
 
 
-def batch_ocr(pdf_paths: list[Path], output_dir: Path, model=None) -> list[Path]:
+def batch_ocr(
+    pdf_paths: list[Path], output_dir: Path, model=None, debug: bool = False
+) -> list[Path]:
     """
     OCRs a list of PDF files and returns paths to generated .txt files.
     """
@@ -83,7 +95,7 @@ def batch_ocr(pdf_paths: list[Path], output_dir: Path, model=None) -> list[Path]
     output_txt_paths = []
 
     for pdf_path in pdf_paths:
-        txt_path = ocr_pdf_file(pdf_path, output_dir, model)
+        txt_path = ocr_pdf_file(pdf_path, output_dir, model, debug)
         output_txt_paths.append(txt_path)
 
     logger.info("OCR batch processing complete.")

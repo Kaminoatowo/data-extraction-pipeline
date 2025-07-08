@@ -4,7 +4,7 @@ from pathlib import Path
 from openai import OpenAI
 from config.config import OPENAI_API_KEY
 from scripts.utils.logger import setup_logger
-from utils.prompt_loader import load_prompts  # adjust path as needed
+from scripts.utils.prompt_loader import load_prompts  # adjust path as needed
 
 logger = setup_logger("ocr_runner")
 
@@ -40,12 +40,18 @@ def load_txt_files(txt_folder: Path) -> dict:
     return txt_contents
 
 
-def generate_rag_output(model, text: str, rag_prompt: str, output_path: Path) -> str:
+def generate_rag_output(
+    model, text: str, rag_prompt: str, output_path: Path, debug: bool
+) -> str:
     """
     Generate RAG-style output using a prompt and save to file.
     """
     logger.info(f"Generating RAG output -> {output_path.name}")
     rag_message = {"role": "system", "content": rag_prompt}
+    if debug:
+        logger.debug(f"RAG prompt: {rag_message['content']}")
+        logger.debug(f"Input text length: {len(text)} characters")
+        return "Debug mode enabled, skipping RAG generation."
     rag_response = model.chat.completions.create(
         model="gpt-4.1-mini",
         messages=[rag_message, {"role": "user", "content": text}],
@@ -58,12 +64,18 @@ def generate_rag_output(model, text: str, rag_prompt: str, output_path: Path) ->
     return content
 
 
-def generate_cpt_output(model, text: str, cpt_prompt: str, output_path: Path) -> str:
+def generate_cpt_output(
+    model, text: str, cpt_prompt: str, output_path: Path, debug: bool
+) -> str:
     """
     Generate CPT-style output using a prompt and save to file.
     """
     logger.info(f"Generating CPT output -> {output_path.name}")
     cpt_message = {"role": "system", "content": cpt_prompt}
+    if debug:
+        logger.debug(f"CPT prompt: {cpt_message['content']}")
+        logger.debug(f"Input text length: {len(text)} characters")
+        return "Debug mode enabled, skipping CPT generation."
     cpt_response = model.chat.completions.create(
         model="gpt-4.1-mini",
         messages=[cpt_message, {"role": "user", "content": text}],
@@ -81,6 +93,7 @@ def generate_outputs_from_ocr_txt(
     output_rag_dir: Path,
     output_cpt_dir: Path,
     prompts_path: Path,
+    debug: bool = False,
 ):
     """
     Generates RAG and CPT outputs for all .txt files in the OCR output directory.
@@ -101,11 +114,11 @@ def generate_outputs_from_ocr_txt(
         cpt_out_path = output_cpt_dir / f"{base}.txt"
 
         if not rag_out_path.exists():
-            generate_rag_output(model, text, prompts["rag_prompt"], rag_out_path)
+            generate_rag_output(model, text, prompts["rag_prompt"], rag_out_path, debug)
         else:
             logger.warning(f"RAG output already exists for {base}. Skipping.")
 
         if not cpt_out_path.exists():
-            generate_cpt_output(model, text, prompts["cpt_prompt"], cpt_out_path)
+            generate_cpt_output(model, text, prompts["cpt_prompt"], cpt_out_path, debug)
         else:
             logger.warning(f"CPT output already exists for {base}. Skipping.")
