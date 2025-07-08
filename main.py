@@ -6,6 +6,10 @@ from scripts.utils.logger import setup_logger
 from scripts.pdf.pdf_splitter import run_pdf_split
 from scripts.ocr.ocr_runner import batch_ocr
 from scripts.generation.cpt_rag_generation import generate_outputs_from_ocr_txt
+from scripts.equations.equation_extraction import generate_equation_jsons
+from scripts.equations.equation_formatting import format_equation_conversations
+from scripts.fine_tuning.synthetic_data import generate_synthetic_finetune_dataset
+from scripts.generation.qa_generation import generate_qa_pairs
 
 logger = setup_logger("pipeline")
 
@@ -71,26 +75,6 @@ def run_pipeline(args):
             )
             return
 
-    # # Step 2: Split Text
-    # if args.run_split:
-    #     logger.info("Splitting text...")
-    #     splits = split_text(text)
-    #     split_path = output_dir / "splits.json"
-    #     import json
-
-    #     split_path.write_text(json.dumps(splits, indent=2, ensure_ascii=False))
-    #     logger.info("Text splits saved to %s", split_path)
-    # else:
-    #     split_path = output_dir / "splits.json"
-    #     if split_path.exists():
-    #         import json
-
-    #         splits = json.loads(split_path.read_text(encoding="utf-8"))
-    #         logger.info("Loaded existing splits from %s", split_path)
-    #     else:
-    #         logger.error("Splits not found. Run text splitter or provide manually.")
-    #         return
-
     # Step 3: RAG Data
     if args.run_rag:
         logger.info("Running CPT/RAG generation...")
@@ -98,26 +82,40 @@ def run_pipeline(args):
             ocr_txt_dir=ocr_output_dir,
             output_rag_dir=output_dir / "output_rag",
             output_cpt_dir=output_dir / "output_cpt",
-            prompts_path=Path(
-                "config/prompts.yaml", debug=DEBUG_MODE
-            ),  # or wherever your prompts live
+            prompts_path=Path("config/prompts.yaml"),
+            debug=DEBUG_MODE,  # or wherever your prompts live
         )
 
-    # # Step 5: Equation Extraction
-    # if args.run_equations:
-    #     logger.info("Extracting equations...")
-    #     extract_equations(splits, output_dir)
-    #     logger.info("Equation extraction complete.")
-    # else:
-    #     logger.info("Skipping equation extraction.")
+    if args.run_equations:
+        generate_equation_jsons(
+            ocr_txt_dir=ocr_output_dir,
+            output_dir=output_dir / "equations_json",
+            prompts_path=Path("config/prompts.yaml"),
+            debug=DEBUG_MODE,
+        )
 
-    # # Step 6: QA Generation
-    # if args.run_qa:
-    #     logger.info("Generating Q&A...")
-    #     generate_qa_pairs(splits, output_dir)
-    #     logger.info("Q&A generation complete.")
-    # else:
-    #     logger.info("Skipping Q&A generation.")
+        json_dir = output_dir / "equations_json"
+        formatted_dir = output_dir / "formatted_equations"
+        for json_file in json_dir.glob("*.json"):
+            format_equation_conversations(
+                json_file, formatted_dir / f"{json_file.stem}.json"
+            )
+
+    if args.run_synth:
+        generate_synthetic_finetune_dataset(
+            formatted_convos_dir=output_dir / "formatted_equations",
+            output_jsonl_path=output_dir
+            / "synthetic_dataset"
+            / "equation_finetune_data.jsonl",
+        )
+
+    if args.run_qa:
+        generate_qa_pairs(
+            input_dir=output_dir / "output_rag",  # or output_cpt
+            output_dir=output_dir / "qa_pairs",
+            prompts_path=Path("config/prompts.yaml"),
+            debug=DEBUG_MODE,
+        )
 
     logger.info("Pipeline finished.")
 
@@ -166,6 +164,10 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--run_qa", action="store_true", help="Run question generation."
+    )
+
+    parser.add_argument(
+        "--run_synth", action="store_true", help="Run synthetic data generation."
     )
 
     parser.add_argument(
