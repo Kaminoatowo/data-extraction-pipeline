@@ -1,21 +1,21 @@
 import argparse
 from pathlib import Path
+from config.config import DEBUG_MODE
 
 from scripts.utils.logger import setup_logger
 from scripts.pdf.pdf_splitter import run_pdf_split
-
 from scripts.ocr.ocr_runner import batch_ocr
-
-# from scripts.splitter.splitter import split_text
-# from scripts.rag.rag_builder import build_rag_data
-# from scripts.cpt.cpt_generator import generate_cpt
-# from scripts.equations.extract_equations import extract_equations
-# from scripts.qa.qa_generator import generate_qa_pairs
+from scripts.generation.cpt_rag_generation import generate_outputs_from_ocr_txt
 
 logger = setup_logger("pipeline")
 
 
 def run_pipeline(args):
+    # Handle debug mode configuration
+    if args.debug_mode:
+        DEBUG_MODE = True
+        logger.info("Debug mode enabled: %s", DEBUG_MODE)
+
     work_dir = Path(args.work_dir)
     split_output_dir = work_dir / "pdfs"
     split_output_dir.mkdir(parents=True, exist_ok=True)
@@ -91,22 +91,15 @@ def run_pipeline(args):
     #         logger.error("Splits not found. Run text splitter or provide manually.")
     #         return
 
-    # # Step 3: RAG Data
-    # if args.run_rag:
-    #     logger.info("Generating RAG data...")
-    #     rag_data = build_rag_data(splits, output_dir)
-    #     logger.info("RAG data generated.")
-    # else:
-    #     logger.info("Skipping RAG generation.")
-    #     rag_data = None
-
-    # # Step 4: CPT
-    # if args.run_cpt:
-    #     logger.info("Generating CPT...")
-    #     generate_cpt(splits, output_dir)
-    #     logger.info("CPT generation complete.")
-    # else:
-    #     logger.info("Skipping CPT generation.")
+    # Step 3: RAG Data
+    if args.run_rag:
+        logger.info("Running CPT/RAG generation...")
+        generate_outputs_from_ocr_txt(
+            ocr_txt_dir=ocr_output_dir,
+            output_rag_dir=output_dir / "output_rag",
+            output_cpt_dir=output_dir / "output_cpt",
+            prompts_path=Path("config/prompts.yaml"),  # or wherever your prompts live
+        )
 
     # # Step 5: Equation Extraction
     # if args.run_equations:
@@ -133,7 +126,10 @@ if __name__ == "__main__":
         "--input_pdf", type=str, required=True, help="Path to the input PDF file."
     )
     parser.add_argument(
-        "--output_dir", type=str, default="output", help="Directory to store outputs."
+        "--output_dir",
+        type=str,
+        default="data/outputs",
+        help="Directory to store outputs.",
     )
 
     parser.add_argument(
@@ -168,6 +164,12 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--run_qa", action="store_true", help="Run question generation."
+    )
+
+    parser.add_argument(
+        "--debug_mode",
+        action="store_true",
+        help="Enable debug mode. When enabled, disables gpt APIs.",
     )
 
     parser.add_argument("--run_all", action="store_true", help="Run the full pipeline.")
