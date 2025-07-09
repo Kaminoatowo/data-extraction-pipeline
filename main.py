@@ -199,6 +199,16 @@ def run_pipeline(args):
             output_path=work_dir / "jsonl_files" / "new_pretraining.jsonl",
         )
         logger.info("CPT data generation complete.")
+        if args.input_cpt:
+            logger.info("Merging with existing CPT data...")
+            merge_files(
+                input_paths=[
+                    Path(args.input_cpt),
+                    work_dir / "jsonl_files" / "new_pretraining.jsonl",
+                ],
+                output_path=work_dir / "jsonl_files" / "merged_cpt.jsonl",
+            )
+            logger.info("Merged CPT data saved to %s", work_dir / "jsonl_files")
 
     if args.gen_ft:
         logger.info("Gathering fine-tuning data outputs...")
@@ -210,6 +220,16 @@ def run_pipeline(args):
             output_path=work_dir / "jsonl_files" / "new_finetuning.jsonl",
         )
         logger.info("Fine-tuning data generation complete.")
+        if args.input_ft:
+            logger.info("Merging with existing fine-tuning data...")
+            merge_files(
+                input_paths=[
+                    Path(args.input_ft),
+                    work_dir / "jsonl_files" / "new_finetuning.jsonl",
+                ],
+                output_path=work_dir / "jsonl_files" / "merged_finetuning.jsonl",
+            )
+            logger.info("Merged fine-tuning data saved to %s", work_dir / "jsonl_files")
 
     logger.info("Pipeline finished.")
 
@@ -230,6 +250,9 @@ if __name__ == "__main__":
         default="data",
         help="Base directory for all output files",
     )
+
+    parser.add_argument("--input_cpt", type=str, help="Path to the existing CPT file.")
+    parser.add_argument("--input_ft", type=str, help="Path to the existing FT file.")
 
     # Flags for partial execution
     parser.add_argument("--split_only", action="store_true", help="Only split PDF")
