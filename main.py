@@ -3,6 +3,7 @@ from pathlib import Path
 import shutil
 
 from scripts.utils.logger import setup_logger
+from scripts.utils.merge_content import merge_files
 from scripts.pdf.pdf_splitter import run_pdf_split
 from scripts.ocr.ocr_runner import batch_ocr
 from scripts.generation.cpt_rag_generation import generate_outputs_from_ocr_txt
@@ -179,12 +180,36 @@ def run_pipeline(args):
         logger.info("Synthetic data generation complete.")
 
     if args.run_qa:
+        logger.info("Starting Q&A pairs generation...")
         generate_qa_pairs(
             input_dir=output_dir / "output_rag",  # or output_cpt
             output_dir=output_dir / "qa_pairs",
             prompts_path=Path("config/prompts.yaml"),
             debug=DEBUG_MODE,
         )
+        logger.info("Q&A pairs generation complete.")
+
+    if args.gen_cpt:
+        logger.info("Gathering CPT data outputs...")
+        merge_files(
+            input_paths=[
+                output_dir / "formatted_equations" / "pretraining_dataset.jsonl",
+                output_dir / "synthetic_data.jsonl",
+            ],
+            output_path=work_dir / "jsonl_files" / "new_pretraining.jsonl",
+        )
+        logger.info("CPT data generation complete.")
+
+    if args.gen_ft:
+        logger.info("Gathering fine-tuning data outputs...")
+        merge_files(
+            input_paths=[
+                output_dir / "formatted_equations" / "finetuning_dataset.jsonl",
+                output_dir / "qa_pairs" / "all_qa_pairs.jsonl",
+            ],
+            output_path=work_dir / "jsonl_files" / "new_finetuning.jsonl",
+        )
+        logger.info("Fine-tuning data generation complete.")
 
     logger.info("Pipeline finished.")
 
@@ -238,6 +263,18 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "--gen_cpt",
+        action="store_true",
+        help="Generate CPT data from RAG outputs.",
+    )
+
+    parser.add_argument(
+        "--gen_ft",
+        action="store_true",
+        help="Generate fine-tuning data from RAG outputs.",
+    )
+
+    parser.add_argument(
         "--debug_mode",
         action="store_true",
         help="Enable debug mode. When enabled, disables gpt APIs.",
@@ -262,5 +299,7 @@ if __name__ == "__main__":
         args.run_equations = True
         args.run_qa = True
         args.run_synth = True
+        args.gen_cpt = True
+        args.gen_ft = True
 
     run_pipeline(args)
