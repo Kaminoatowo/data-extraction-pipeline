@@ -84,7 +84,7 @@ def generate_finetuning_pair(equation_data: Dict[str, Any]) -> Dict[str, str]:
     if conditions:
         answer += f"\nThis equation is typically used under these conditions: {', '.join(conditions).lower()}."
 
-    return {"question": question, "answer": answer.strip()}
+    return {"prompt": question, "response": answer.strip()}
 
 
 def generate_conversation_pair(equation_data: Dict[str, Any]) -> Dict[str, str]:
@@ -97,7 +97,7 @@ def generate_conversation_pair(equation_data: Dict[str, Any]) -> Dict[str, str]:
         if equation
         else "What does the following equation represent?"
     )
-    return {"instruction": instruction, "response": description}
+    return {"prompt": instruction, "response": description}
 
 
 def process_json_file(file_path: Path) -> List[Dict[str, Any]]:

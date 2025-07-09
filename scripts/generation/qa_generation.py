@@ -75,9 +75,10 @@ def generate_qa_pairs(
             logger.warning(f"No Q&A generated for {txt_file}")
 
     if all_qa_pairs:
-        output_path = output_dir / "all_qa_pairs.json"
+        output_path = output_dir / "all_qa_pairs.jsonl"
         with output_path.open("w", encoding="utf-8") as out_f:
-            json.dump(all_qa_pairs, out_f, indent=2, ensure_ascii=False)
+            for qa_pair in all_qa_pairs:
+                out_f.write(json.dumps(qa_pair, ensure_ascii=False) + "\n")
         logger.info(f"Saved all Q&A pairs to {output_path}")
     else:
         logger.warning("No Q&A pairs generated from any file.")
