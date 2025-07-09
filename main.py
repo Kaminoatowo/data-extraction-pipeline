@@ -21,6 +21,7 @@ def clean_all_files(work_dir, output_dir):
         work_dir / "pdfs",
         work_dir / "ocr_output",
         work_dir / "texts",
+        work_dir / "datasets",
         output_dir / "output_rag",
         output_dir / "output_cpt",
         output_dir / "equations_json",
@@ -149,7 +150,7 @@ def run_pipeline(args):
         logger.info("Running equation extraction...")
         generate_equation_jsons(
             input_txt=output_dir / "output_rag",
-            output_dir=output_dir / "equations_json",
+            output_dir=work_dir / "datasets",
             prompts_path=Path("config/prompts.yaml"),
             debug=DEBUG_MODE,
         )
@@ -158,14 +159,13 @@ def run_pipeline(args):
             output_dir / "equations_json",
         )
 
-        json_dir = output_dir / "equations_json"
+        ### TRY WITH MORE THAN ONE EQUATION
+        json_dir = work_dir / "datasets"
         formatted_dir = output_dir / "formatted_equations"
-        fine_tuning_equations_dir = output_dir / "fine_tuning_equations"
-        for json_file in json_dir.glob("*.json"):
-            format_equation_conversations(
-                json_file,
-                formatted_dir / f"{json_file.stem}.json",
-            )
+        format_equation_conversations(
+            json_dir,
+            formatted_dir,
+        )
         logger.info("Formatted equations saved to %s", formatted_dir)
 
     if args.run_synth:

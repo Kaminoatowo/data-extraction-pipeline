@@ -162,16 +162,16 @@ def generate_datasets(
         logger.info(f"Conversation pairs: {len(conversation_data)}")
 
 
-def format_equation_conversations(input_json: Path, output_json: Path):
+def format_equation_conversations(input_dir: Path, output_dir: Path):
     """Utility to format conversation pairs from a single file."""
-    logger.info(f"Formatting conversations from: {input_json}")
-    data = process_json_file(input_json)
-    if not data:
-        return
+    logger.info(f"Formatting conversations from: {input_dir}")
+    # data = process_json_file(input_dir)
+    # if not data:
+    #     return
 
     # conversations = [generate_conversation_pair(entry) for entry in data]
     # output_json.parent.mkdir(parents=True, exist_ok=True)
     # save_json(conversations, output_json)
     # logger.info(f"Saved conversation dataset to {output_json}")
 
-    generate_datasets(input_json.parent, output_json.parent, include_conversations=True)
+    generate_datasets(input_dir, output_dir, include_conversations=True)

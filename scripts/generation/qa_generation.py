@@ -61,6 +61,7 @@ def generate_qa_pairs(
     output_dir.mkdir(parents=True, exist_ok=True)
     prompts = load_prompts(prompts_path)
 
+    all_qa_pairs = []
     for txt_file in sorted(input_dir.glob("*.txt")):
         with txt_file.open("r", encoding="utf-8") as f:
             text = f.read()
@@ -68,9 +69,15 @@ def generate_qa_pairs(
         qa_pairs = generate_qa_from_text(text, prompts["qa_prompt"], debug)
 
         if qa_pairs:
-            output_path = output_dir / f"{txt_file.stem}_qa.json"
-            with output_path.open("w", encoding="utf-8") as out_f:
-                json.dump(qa_pairs, out_f, indent=2, ensure_ascii=False)
-            logger.info(f"Saved Q&A pairs to {output_path}")
+            all_qa_pairs.extend(qa_pairs)
+            logger.info(f"Extracted {len(qa_pairs)} Q&A pairs from {txt_file}")
         else:
             logger.warning(f"No Q&A generated for {txt_file}")
+
+    if all_qa_pairs:
+        output_path = output_dir / "all_qa_pairs.json"
+        with output_path.open("w", encoding="utf-8") as out_f:
+            json.dump(all_qa_pairs, out_f, indent=2, ensure_ascii=False)
+        logger.info(f"Saved all Q&A pairs to {output_path}")
+    else:
+        logger.warning("No Q&A pairs generated from any file.")
