@@ -1,6 +1,8 @@
 import argparse
 from pathlib import Path
 import shutil
+import zipfile
+from datetime import datetime
 
 from scripts.utils.logger import setup_logger
 from scripts.utils.merge_content import merge_files
@@ -16,13 +18,26 @@ logger = setup_logger("pipeline")
 DEBUG_MODE = False  # Default debug mode is off
 
 
-def clean_all_files(work_dir, output_dir):
-    """Clean all generated files from the pipeline directories."""
-    directories_to_clean = [
+def archive_generated_files(work_dir, output_dir, archive_dir=None):
+    """Archive all generated files that would be deleted by clean_all_files."""
+    if archive_dir is None:
+        archive_dir = Path(work_dir) / "archive"
+    else:
+        archive_dir = Path(archive_dir)
+
+    archive_dir.mkdir(parents=True, exist_ok=True)
+
+    # Create timestamp for unique archive name
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    archive_filename = f"pipeline_backup_{timestamp}.zip"
+    archive_path = archive_dir / archive_filename
+
+    directories_to_archive = [
         work_dir / "pdfs",
         work_dir / "ocr_output",
         work_dir / "texts",
         work_dir / "datasets",
+        work_dir / "jsonl_files",
         output_dir / "output_rag",
         output_dir / "output_cpt",
         output_dir / "equations_json",
@@ -32,7 +47,67 @@ def clean_all_files(work_dir, output_dir):
         output_dir,  # For files like synthetic_data.jsonl, extracted_text.txt
     ]
 
-    # Prompt for confirmation
+    files_archived = 0
+
+    logger.info("Creating archive: %s", archive_path)
+
+    with zipfile.ZipFile(archive_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+        for directory in directories_to_archive:
+            if directory.exists():
+                logger.info("Archiving files from directory: %s", directory)
+
+                # Archive all files in the directory (recursively)
+                for file_path in directory.rglob("*"):
+                    if file_path.is_file():
+                        # Archive specific file types
+                        if file_path.suffix.lower() in [
+                            ".pdf",
+                            ".txt",
+                            ".json",
+                            ".jsonl",
+                        ]:
+                            # Create relative path for zip archive
+                            relative_path = file_path.relative_to(Path(work_dir).parent)
+                            zipf.write(file_path, relative_path)
+                            files_archived += 1
+                            logger.debug("Archived file: %s", file_path)
+
+    logger.info(
+        "Archive completed. Archived %d files to %s", files_archived, archive_path
+    )
+    return archive_path
+
+
+def clean_all_files(work_dir, output_dir):
+    """Clean all generated files from the pipeline directories."""
+    directories_to_clean = [
+        work_dir / "pdfs",
+        work_dir / "ocr_output",
+        work_dir / "texts",
+        work_dir / "datasets",
+        work_dir / "jsonl_files",
+        output_dir / "output_rag",
+        output_dir / "output_cpt",
+        output_dir / "equations_json",
+        output_dir / "formatted_equations",
+        output_dir / "fine_tuning_equations",
+        output_dir / "qa_pairs",
+        output_dir,  # For files like synthetic_data.jsonl, extracted_text.txt
+    ]
+
+    # Ask if user wants to archive before deletion
+    archive_response = (
+        input("Do you want to archive files before deletion? (yes/no): ")
+        .strip()
+        .lower()
+    )
+
+    if archive_response in ["yes", "y"]:
+        logger.info("Creating archive before deletion...")
+        archive_path = archive_generated_files(work_dir, output_dir)
+        logger.info("Archive created: %s", archive_path)
+
+    # Prompt for confirmation to delete
     response = (
         input("Are you sure you want to delete all generated files? (yes/no): ")
         .strip()
@@ -62,7 +137,29 @@ def clean_all_files(work_dir, output_dir):
 
 
 def run_pipeline(args):
-    # Handle clean_all option first
+    # Handle archive option first
+    if args.archive_files:
+        work_dir = Path(args.work_dir)
+        output_dir = Path(args.output_dir)
+        archive_dir = Path(args.archive_dir) if args.archive_dir else None
+        archive_path = archive_generated_files(work_dir, output_dir, archive_dir)
+        logger.info("Files archived to: %s", archive_path)
+        if not any(
+            [
+                args.clean_all,
+                args.run_ocr,
+                args.run_rag,
+                args.run_equations,
+                args.run_qa,
+                args.run_synth,
+                args.gen_cpt,
+                args.gen_ft,
+                args.run_all,
+            ]
+        ):
+            return  # Only archive if no other operations requested
+
+    # Handle clean_all option
     if args.clean_all:
         work_dir = Path(args.work_dir)
         output_dir = Path(args.output_dir)
@@ -307,6 +404,19 @@ if __name__ == "__main__":
         "--clean_all",
         action="store_true",
         help="Delete all generated files (PDFs, TXT, JSON) from output directories. Prompts for confirmation.",
+    )
+
+    parser.add_argument(
+        "--archive_files",
+        action="store_true",
+        help="Archive all generated files to a timestamped zip file before any operations.",
+    )
+
+    parser.add_argument(
+        "--archive_dir",
+        type=str,
+        default=None,
+        help="Directory to store archive files. Defaults to 'work_dir/archive'.",
     )
 
     parser.add_argument("--run_all", action="store_true", help="Run the full pipeline.")
