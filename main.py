@@ -177,17 +177,22 @@ def run_pipeline(args):
     split_output_dir = work_dir / "pdfs"
     split_output_dir.mkdir(parents=True, exist_ok=True)
 
-    input_path = Path(args.input_pdf)
+    if args.input_pdf is None:
+        logger.error(
+            "No input PDF file provided. Starting pipeline with pdf in %s",
+            split_output_dir,
+        )
+    else:
+        input_path = Path(args.input_pdf)
+        logger.info("Starting pipeline with input PDF: %s", input_path)
+        if args.split_only or args.run_split:
+            logger.info("Running split-only mode.")
+            run_pdf_split(input_path, split_output_dir, args.pages_per_chunk)
+            if args.split_only:
+                return
+
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-
-    logger.info("Starting pipeline with input PDF: %s", input_path)
-
-    if args.split_only or args.run_split:
-        logger.info("Running split-only mode.")
-        run_pdf_split(input_path, split_output_dir, args.pages_per_chunk)
-        if args.split_only:
-            return
 
     ocr_output_dir = work_dir / "ocr_output"
 
@@ -424,7 +429,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.run_all:
-        args.run_split = True
         args.run_ocr = True
         args.run_split = True
         args.run_rag = True
