@@ -33,18 +33,19 @@ def archive_generated_files(work_dir, output_dir, archive_dir=None):
     archive_path = archive_dir / archive_filename
 
     directories_to_archive = [
-        work_dir / "pdfs",
-        work_dir / "ocr_output",
-        work_dir / "texts",
-        work_dir / "datasets",
-        work_dir / "jsonl_files",
-        output_dir / "output_rag",
-        output_dir / "output_cpt",
-        output_dir / "equations_json",
-        output_dir / "formatted_equations",
-        output_dir / "fine_tuning_equations",
-        output_dir / "qa_pairs",
-        output_dir,  # For files like synthetic_data.jsonl, extracted_text.txt
+        work_dir
+        # work_dir / "pdfs",
+        # work_dir / "ocr_output",
+        # work_dir / "texts",
+        # work_dir / "datasets",
+        # work_dir / "jsonl_files",
+        # output_dir / "output_rag",
+        # output_dir / "output_cpt",
+        # output_dir / "equations_json",
+        # output_dir / "formatted_equations",
+        # output_dir / "fine_tuning_equations",
+        # output_dir / "qa_pairs",
+        # output_dir,  # For files like synthetic_data.jsonl, extracted_text.txt
     ]
 
     files_archived = 0
@@ -81,18 +82,19 @@ def archive_generated_files(work_dir, output_dir, archive_dir=None):
 def clean_all_files(work_dir, output_dir):
     """Clean all generated files from the pipeline directories."""
     directories_to_clean = [
-        work_dir / "pdfs",
-        work_dir / "ocr_output",
-        work_dir / "texts",
-        work_dir / "datasets",
-        work_dir / "jsonl_files",
-        output_dir / "output_rag",
-        output_dir / "output_cpt",
-        output_dir / "equations_json",
-        output_dir / "formatted_equations",
-        output_dir / "fine_tuning_equations",
-        output_dir / "qa_pairs",
-        output_dir,  # For files like synthetic_data.jsonl, extracted_text.txt
+        work_dir
+        # work_dir / "pdfs",
+        # work_dir / "ocr_output",
+        # work_dir / "texts",
+        # work_dir / "datasets",
+        # work_dir / "jsonl_files",
+        # output_dir / "output_rag",
+        # output_dir / "output_cpt",
+        # output_dir / "equations_json",
+        # output_dir / "formatted_equations",
+        # output_dir / "fine_tuning_equations",
+        # output_dir / "qa_pairs",
+        # output_dir,  # For files like synthetic_data.jsonl, extracted_text.txt
     ]
 
     # Ask if user wants to archive before deletion
@@ -429,8 +431,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.run_all:
-        args.run_ocr = True
         args.run_split = True
+        args.run_ocr = True
         args.run_rag = True
         args.run_cpt = True
         args.run_equations = True
