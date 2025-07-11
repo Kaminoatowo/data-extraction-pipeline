@@ -208,7 +208,6 @@ def run_pipeline(args):
                 "No PDF chunks found in %s. Make sure splitting has been done.",
                 split_output_dir,
             )
-            return
 
         ocr_txt_paths = batch_ocr(pdf_chunks, ocr_output_dir, debug=DEBUG_MODE)
 
@@ -216,7 +215,6 @@ def run_pipeline(args):
             logger.info("OCR completed. Text files saved to: %s", ocr_output_dir)
         else:
             logger.error("OCR returned no output. Check model or PDF inputs.")
-            return
     else:
         ocr_txt_files = sorted(ocr_output_dir.glob("*.txt"))
 
@@ -234,7 +232,6 @@ def run_pipeline(args):
                 "No existing OCR text files found in %s. Run OCR first or provide input.",
                 ocr_output_dir,
             )
-            return
 
     # Step 3: RAG Data
     if args.run_rag:
@@ -299,6 +296,7 @@ def run_pipeline(args):
             input_paths=[
                 output_dir / "formatted_equations" / "pretraining_dataset.jsonl",
                 output_dir / "synthetic_data.jsonl",
+                output_dir / "cpt_text.jsonl",
             ],
             output_path=work_dir / "jsonl_files" / "new_pretraining.jsonl",
         )
