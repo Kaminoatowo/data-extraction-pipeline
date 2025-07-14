@@ -3,6 +3,11 @@ import re
 from pathlib import Path
 from typing import Dict, List, Any
 from scripts.utils.logger import setup_logger
+from scripts.utils.content_format import (
+    generate_fine_tuning,
+    generate_pretraining,
+    generate_instruction,
+)
 
 logger = setup_logger("equation_formatting")
 
@@ -58,7 +63,7 @@ def generate_pretraining_text(equation_data: Dict[str, Any]) -> str:
     if source != "Unknown Source":
         text += f"This relationship is documented in {source}."
 
-    return text
+    return generate_pretraining(text)
 
 
 def generate_finetuning_pair(equation_data: Dict[str, Any]) -> Dict[str, str]:
@@ -84,7 +89,7 @@ def generate_finetuning_pair(equation_data: Dict[str, Any]) -> Dict[str, str]:
     if conditions:
         answer += f"\nThis equation is typically used under these conditions: {', '.join(conditions).lower()}."
 
-    return {"prompt": question, "response": answer.strip()}
+    return generate_fine_tuning(question, answer)
 
 
 def generate_conversation_pair(equation_data: Dict[str, Any]) -> Dict[str, str]:
@@ -97,7 +102,7 @@ def generate_conversation_pair(equation_data: Dict[str, Any]) -> Dict[str, str]:
         if equation
         else "What does the following equation represent?"
     )
-    return {"prompt": instruction, "response": description}
+    return generate_instruction(instruction, description)
 
 
 def process_json_file(file_path: Path) -> List[Dict[str, Any]]:
@@ -144,7 +149,7 @@ def generate_datasets(
         logger.info(f"Reading {file.name}")
         equations = process_json_file(file)
         for entry in equations:
-            pretraining_data.append({"text": generate_pretraining_text(entry)})
+            pretraining_data.append(generate_pretraining_text(entry))
             finetuning_data.append(generate_finetuning_pair(entry))
             if include_conversations:
                 conversation_data.append(generate_conversation_pair(entry))

@@ -1,9 +1,9 @@
-import os
-import glob
+import json
 from pathlib import Path
 from config.config import openai_client, MODEL_NAME
 from scripts.utils.logger import setup_logger
 from scripts.utils.prompt_loader import load_prompts  # adjust path as needed
+from scripts.utils.content_format import generate_pretraining
 
 logger = setup_logger("cpt_rag_generation")
 
@@ -20,6 +20,29 @@ def load_txt_files(txt_folder: Path) -> dict:
             txt_contents[i] = f.read()
             logger.debug(f"Loaded text file: {txt_file}")
     return txt_contents
+
+
+def extract_cpt(message):
+    content = []
+    for text in message.split("##"):
+        text = text.strip().replace("\n", " ").replace("\\", "\\\\").replace('"', '\\"')
+        if len(text) < 100:
+            continue
+        content.append('{"text" : "' + text + '"}')
+    return content
+
+
+def txt_folder_to_jsonl(txt_folder, output_jsonl):
+    lines = []
+    for filename in os.listdir(txt_folder):
+        if filename.endswith(".txt"):
+            filepath = os.path.join(txt_folder, filename)
+            with open(filepath, "r", encoding="utf-8") as f:
+                content = f.read().strip()
+                if content:
+                    lines.extend(extract_cpt(content))
+    with open(output_jsonl, "w", encoding="utf-8") as out:
+        out.write("\n".join(lines))
 
 
 def generate_rag_output(
@@ -101,5 +124,9 @@ def generate_outputs_from_ocr_txt(
 
         if not cpt_out_path.exists():
             generate_cpt_output(text, prompts["cpt_prompt"], cpt_out_path, debug)
+            txt_folder_to_jsonl(cpt_out_path.parent, "cpt.jsonl")
+            print(
+                f"Converted text files in {cpt_out_path.parent} to JSONL format in {"cpt.jsonl"}."
+            )
         else:
             logger.warning(f"CPT output already exists for {base}. Skipping.")

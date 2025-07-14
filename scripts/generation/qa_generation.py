@@ -4,6 +4,7 @@ import re
 from config.config import openai_client, MODEL_NAME
 from scripts.utils.logger import setup_logger
 from scripts.utils.prompt_loader import load_prompts
+from scripts.utils.content_format import generate_fine_tuning
 
 logger = setup_logger("qa_generation")
 
@@ -19,7 +20,7 @@ def extract_qa_pairs(text):
         if q_match and a_match:
             question = q_match.group(1).strip()
             answer = a_match.group(1).strip()
-            pairs.append({"prompt": question, "response": answer})
+            pairs.append(generate_fine_tuning(question, answer))
     return pairs
 
 

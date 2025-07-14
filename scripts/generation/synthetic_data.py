@@ -6,11 +6,11 @@ import tiktoken
 from config.config import openai_client, MODEL_NAME
 from scripts.utils.text_splitter import (
     count_tokens,
-    split_text_into_chunks,
     load_and_split_text_files,
 )
 from scripts.utils.logger import setup_logger
 from scripts.utils.prompt_loader import load_prompts  # adjust path as needed
+from scripts.utils.content_format import generate_pretraining
 
 logger = setup_logger("synthetic_data")
 
@@ -57,7 +57,7 @@ def extract_synthetic_content(text):
 def save_synthetic_data(content_pieces, output_path):
     with open(output_path, "a", encoding="utf-8") as f:
         for content in content_pieces:
-            json_obj = {"text": content}
+            json_obj = generate_pretraining(content)
             f.write(json.dumps(json_obj, ensure_ascii=False) + "\n")
 
 
