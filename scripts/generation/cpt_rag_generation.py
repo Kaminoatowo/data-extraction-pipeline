@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 from config.config import openai_client, MODEL_NAME
 from scripts.utils.logger import setup_logger
@@ -28,7 +29,7 @@ def extract_cpt(message):
         text = text.strip().replace("\n", " ").replace("\\", "\\\\").replace('"', '\\"')
         if len(text) < 100:
             continue
-        content.append('{"text" : "' + text + '"}')
+        content.append(generate_pretraining(text))
     return content
 
 
@@ -40,9 +41,10 @@ def txt_folder_to_jsonl(txt_folder, output_jsonl):
             with open(filepath, "r", encoding="utf-8") as f:
                 content = f.read().strip()
                 if content:
-                    lines.extend(extract_cpt(content))
+                    lines = extract_cpt(content)
     with open(output_jsonl, "w", encoding="utf-8") as out:
-        out.write("\n".join(lines))
+        for item in lines:
+            out.write(json.dumps(item, ensure_ascii=False) + "\n")
 
 
 def generate_rag_output(
@@ -124,9 +126,5 @@ def generate_outputs_from_ocr_txt(
 
         if not cpt_out_path.exists():
             generate_cpt_output(text, prompts["cpt_prompt"], cpt_out_path, debug)
-            txt_folder_to_jsonl(cpt_out_path.parent, "cpt.jsonl")
-            print(
-                f"Converted text files in {cpt_out_path.parent} to JSONL format in {"cpt.jsonl"}."
-            )
         else:
             logger.warning(f"CPT output already exists for {base}. Skipping.")

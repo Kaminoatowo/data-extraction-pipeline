@@ -8,7 +8,10 @@ from scripts.utils.logger import setup_logger
 from scripts.utils.merge_content import merge_files
 from scripts.pdf.pdf_splitter import run_pdf_split
 from scripts.ocr.ocr_runner import batch_ocr
-from scripts.generation.cpt_rag_generation import generate_outputs_from_ocr_txt
+from scripts.generation.cpt_rag_generation import (
+    generate_outputs_from_ocr_txt,
+    txt_folder_to_jsonl,
+)
 from scripts.equations.equation_extraction import generate_equation_jsons
 from scripts.equations.equation_formatting import format_equation_conversations
 from scripts.generation.qa_generation import generate_qa_pairs
@@ -243,9 +246,14 @@ def run_pipeline(args):
             prompts_path=Path("config/prompts.yaml"),
             debug=DEBUG_MODE,  # or wherever your prompts live
         )
+        txt_folder_to_jsonl(
+            txt_folder=output_dir / "output_cpt",
+            output_jsonl=output_dir / "cpt_text.jsonl",
+        )
         logger.info(
-            "RAG and CPT outputs generated and saved to %s",
+            "RAG and CPT outputs generated and saved to %s and %s",
             output_dir / "output_rag",
+            output_dir / "output_cpt",
         )
 
     if args.run_equations:
