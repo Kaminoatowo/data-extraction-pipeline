@@ -6,11 +6,23 @@ from scripts.utils.logger import setup_logger
 from scripts.utils.prompt_loader import load_prompts
 from scripts.utils.content_format import generate_fine_tuning
 from scripts.utils.batch_processor import process_batches
+from itertools import islice
+from multiprocessing import Pool
 
 logger = setup_logger("qa_generation")
 
 # Batch processing configuration
 BATCH_SIZE = 2  # Process multiple files at once
+
+
+def batched(iterable, n):
+    """Yield successive n-sized batches from iterable."""
+    it = iter(iterable)
+    while True:
+        batch = list(islice(it, n))
+        if not batch:
+            break
+        yield batch
 
 
 def load_text_files(input_dir: Path):
@@ -112,6 +124,33 @@ def generate_qa_from_text(text: str, qa_prompt: str, debug: bool) -> list:
         return []
 
 
+def generate_qa_parallel(
+    file_path: Path, text_content: str, qa_prompt: str, debug: bool
+) -> list:
+    """
+    Wrapper function for parallel Q&A generation using multiprocessing.
+
+    Args:
+        file_path: Path to the file being processed
+        text_content: Content of the text file
+        qa_prompt: The Q&A generation prompt
+        debug: Whether debug mode is enabled
+
+    Returns:
+        List of Q&A pairs with file information
+    """
+    logger.debug(f"Generating Q&A for file: {file_path.name}")
+
+    qa_pairs = generate_qa_from_text(text_content, qa_prompt, debug)
+
+    if qa_pairs:
+        logger.info(f"Extracted {len(qa_pairs)} Q&A pairs from {file_path.name}")
+        return qa_pairs
+    else:
+        logger.warning(f"No Q&A generated for {file_path.name}")
+        return []
+
+
 def validate_qa_result(result):
     """
     Validate the Q&A generation result.
@@ -142,12 +181,18 @@ def validate_qa_result(result):
 
 
 def generate_qa_pairs(
-    input_dir: Path, output_dir: Path, prompts_path: str, debug: bool = False
+    input_dir: Path,
+    output_dir: Path,
+    prompts_path: str,
+    debug: bool = False,
+    parallel_batch_size: int = 10,
 ):
     """
-    Generates Q&A pairs from each RAG or CPT text file in input_dir using batch processing.
+    Generates Q&A pairs from each RAG or CPT text file in input_dir using parallel processing.
     """
-    logger.info(f"Generating Q&A pairs from files in {input_dir}")
+    logger.info(
+        f"Generating Q&A pairs from files in {input_dir} using parallel processing"
+    )
     output_dir.mkdir(parents=True, exist_ok=True)
     prompts = load_prompts(prompts_path)
     qa_prompt = prompts["qa_prompt"]
@@ -161,16 +206,35 @@ def generate_qa_pairs(
 
     logger.info(f"Found {len(file_data)} text files to process")
 
-    # Create a wrapper function for batch processing
-    def batch_processor(batch, batch_idx, **kwargs):
-        return process_qa_batch(batch, batch_idx, qa_prompt, debug)
+    # Prepare tasks for parallel processing
+    tasks = [
+        (file_path, text_content, qa_prompt, debug)
+        for file_path, text_content in file_data
+    ]
 
-    # Process files in batches and collect all Q&A pairs
     all_qa_pairs = []
-    for batch_qa_pairs in process_batches(
-        file_data, BATCH_SIZE, batch_processor, description="Generating Q&A Pairs"
-    ):
-        all_qa_pairs.extend(batch_qa_pairs)
+
+    if debug:
+        logger.info(
+            "Debug mode enabled, processing files sequentially without parallelization"
+        )
+        for file_path, text_content, qa_prompt, debug in tasks:
+            qa_pairs = generate_qa_parallel(file_path, text_content, qa_prompt, debug)
+            all_qa_pairs.extend(qa_pairs)
+    else:
+        # Use multiprocessing for parallel execution
+        pool = Pool()
+        try:
+            for batch in batched(tasks, parallel_batch_size):
+                logger.info(f"Processing batch of {len(batch)} files in parallel")
+                batch_results = pool.starmap(generate_qa_parallel, batch)
+
+                # Flatten results from the batch
+                for qa_pairs in batch_results:
+                    all_qa_pairs.extend(qa_pairs)
+        finally:
+            pool.close()
+            pool.join()
 
     # Save all Q&A pairs to output file
     if all_qa_pairs:
@@ -191,11 +255,14 @@ def generate_qa_pairs_with_validation(
     prompts_path: str,
     debug: bool = False,
     max_retries: int = 2,
+    parallel_batch_size: int = 10,
 ):
     """
-    Generate Q&A pairs with validation and retry logic.
+    Generate Q&A pairs with validation, retry logic, and parallel processing.
     """
-    logger.info(f"Generating Q&A pairs from files in {input_dir} with validation")
+    logger.info(
+        f"Generating Q&A pairs from files in {input_dir} with validation and parallel processing"
+    )
     output_dir.mkdir(parents=True, exist_ok=True)
     prompts = load_prompts(prompts_path)
     qa_prompt = prompts["qa_prompt"]
@@ -209,25 +276,73 @@ def generate_qa_pairs_with_validation(
 
     logger.info(f"Found {len(file_data)} text files to process")
 
-    # Import the validation processing function
-    from scripts.utils.batch_processor import process_batch_with_validation
+    def process_single_file_with_validation(
+        file_path: Path, text_content: str, qa_prompt: str, debug: bool
+    ):
+        """Process a single file with validation and retry logic."""
+        for attempt in range(max_retries):
+            try:
+                qa_pairs = generate_qa_parallel(
+                    file_path, text_content, qa_prompt, debug
+                )
 
-    # Process files with validation
+                if validate_qa_result(qa_pairs):
+                    return qa_pairs
+                else:
+                    logger.warning(
+                        f"File {file_path.name} validation failed on attempt {attempt + 1}"
+                    )
+                    if attempt < max_retries - 1:
+                        continue
+                    else:
+                        logger.error(
+                            f"File {file_path.name} failed validation after {max_retries} attempts"
+                        )
+                        return []
+            except Exception as e:
+                logger.error(
+                    f"File {file_path.name} failed on attempt {attempt + 1}: {e}"
+                )
+                if attempt == max_retries - 1:
+                    logger.error(
+                        f"File {file_path.name} failed after {max_retries} attempts"
+                    )
+                    return []
+        return []
+
+    # Prepare tasks for parallel processing
+    tasks = [
+        (file_path, text_content, qa_prompt, debug)
+        for file_path, text_content in file_data
+    ]
+
     all_qa_pairs = []
-    for i in range(0, len(file_data), BATCH_SIZE):
-        batch = file_data[i : i + BATCH_SIZE]
-        batch_idx = i // BATCH_SIZE
 
-        batch_qa_pairs = process_batch_with_validation(
-            batch,
-            batch_idx,
-            lambda b, idx, **kwargs: process_qa_batch(b, idx, qa_prompt, debug),
-            validation_function=validate_qa_result,
-            max_retries=max_retries,
+    if debug:
+        logger.info(
+            "Debug mode enabled, processing files sequentially without parallelization"
         )
+        for file_path, text_content, qa_prompt, debug in tasks:
+            qa_pairs = process_single_file_with_validation(
+                file_path, text_content, qa_prompt, debug
+            )
+            all_qa_pairs.extend(qa_pairs)
+    else:
+        # Use multiprocessing for parallel execution
+        pool = Pool()
+        try:
+            for batch in batched(tasks, parallel_batch_size):
+                logger.info(
+                    f"Processing batch of {len(batch)} files in parallel with validation"
+                )
+                batch_results = pool.starmap(process_single_file_with_validation, batch)
 
-        if batch_qa_pairs:
-            all_qa_pairs.extend(batch_qa_pairs)
+                # Flatten results from the batch
+                for qa_pairs in batch_results:
+                    all_qa_pairs.extend(qa_pairs)
+        finally:
+            pool.close()
+            pool.join()
 
     # Save all Q&A pairs to output file
     if all_qa_pairs:
