@@ -1,10 +1,7 @@
 # src/utils/text_splitter.py
 import os
-import tiktoken
 from pathlib import Path
-from config.config import MODEL_NAME  # Ensure this is set in your config
-
-tokenizer = tiktoken.encoding_for_model(MODEL_NAME)
+from config.config import tokenizer
 
 
 def count_tokens(text):
