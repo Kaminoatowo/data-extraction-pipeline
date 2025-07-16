@@ -6,8 +6,6 @@ from scripts.utils.logger import setup_logger
 from scripts.utils.prompt_loader import load_prompts
 from scripts.utils.content_format import generate_fine_tuning
 from scripts.utils.batch_processor import process_batches
-from itertools import islice
-from multiprocessing import Pool
 
 logger = setup_logger("qa_generation")
 
@@ -314,6 +312,7 @@ def generate_qa_pairs_with_validation(
         for file_path, text_content in file_data
     ]
 
+    # Process files with validation
     all_qa_pairs = []
 
     if debug:
