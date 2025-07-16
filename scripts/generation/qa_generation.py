@@ -5,7 +5,7 @@ from config.config import openai_client, MODEL_NAME
 from scripts.utils.logger import setup_logger
 from scripts.utils.prompt_loader import load_prompts
 from scripts.utils.content_format import generate_fine_tuning
-from scripts.utils.batch_processor import process_batches
+from scripts.utils.batch_processor import process_batches, process_batch_with_validation
 
 logger = setup_logger("qa_generation")
 
@@ -208,9 +208,6 @@ def generate_qa_pairs_with_validation(
         return
 
     logger.info(f"Found {len(file_data)} text files to process")
-
-    # Import the validation processing function
-    from scripts.utils.batch_processor import process_batch_with_validation
 
     # Process files with validation
     all_qa_pairs = []
