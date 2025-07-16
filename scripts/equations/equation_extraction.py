@@ -4,11 +4,23 @@ from config.config import openai_client, MODEL_NAME
 from scripts.utils.logger import setup_logger
 from scripts.utils.prompt_loader import load_prompts
 from scripts.utils.batch_processor import process_batches
+from itertools import islice
+from multiprocessing import Pool
 
 logger = setup_logger("equation_extraction")
 
 # Batch processing configuration
 BATCH_SIZE = 3  # Process multiple files at once
+
+
+def batched(iterable, n):
+    """Yield successive n-sized batches from iterable."""
+    it = iter(iterable)
+    while True:
+        batch = list(islice(it, n))
+        if not batch:
+            break
+        yield batch
 
 
 def process_equation_batch(batch, batch_idx, prompt, output_dir, debug=False):
@@ -98,6 +110,37 @@ def extract_equations_from_text(text: str, prompt: str, debug: bool) -> dict:
         return {}
 
 
+def extract_equations(
+    file_path: Path, text_content: str, prompt: str, output_dir: Path, debug: bool
+) -> bool:
+    """
+    Wrapper function for parallel equation extraction using multiprocessing.
+
+    Args:
+        file_path: Path to the file being processed
+        text_content: Content of the text file
+        prompt: The equation extraction prompt
+        output_dir: Directory to save JSON files
+        debug: Whether debug mode is enabled
+
+    Returns:
+        bool: True if extraction was successful, False otherwise
+    """
+    logger.debug(f"Processing file: {file_path.name}")
+
+    result = extract_equations_from_text(text_content, prompt, debug)
+
+    if result:
+        out_path = output_dir / f"{file_path.stem}.json"
+        with out_path.open("w", encoding="utf-8") as json_file:
+            json.dump(result, json_file, indent=2, ensure_ascii=False)
+        logger.info(f"Saved equation JSON to {out_path}")
+        return True
+    else:
+        logger.warning(f"No equations extracted from {file_path}")
+        return False
+
+
 def validate_equation_result(result):
     """
     Validate the equation extraction result.
@@ -116,12 +159,16 @@ def validate_equation_result(result):
 
 
 def generate_equation_jsons(
-    input_txt: Path, output_dir: Path, prompts_path: str, debug: bool = False
+    input_txt: Path,
+    output_dir: Path,
+    prompts_path: str,
+    debug: bool = False,
+    parallel_batch_size: int = 10,
 ):
     """
-    Process all OCR .txt files and generate JSON files with extracted equations using batch processing.
+    Process all OCR .txt files and generate JSON files with extracted equations using parallel processing.
     """
-    logger.info(f"Generating equation JSONs from {input_txt}")
+    logger.info(f"Generating equation JSONs from {input_txt} using parallel processing")
     output_dir.mkdir(parents=True, exist_ok=True)
     prompts = load_prompts(prompts_path)
     prompt = prompts["equation_extraction_prompt"]
@@ -135,16 +182,37 @@ def generate_equation_jsons(
 
     logger.info(f"Found {len(file_data)} text files to process")
 
-    # Create a wrapper function for batch processing
-    def batch_processor(batch, batch_idx, **kwargs):
-        return process_equation_batch(batch, batch_idx, prompt, output_dir, debug)
+    # Prepare tasks for parallel processing
+    tasks = [
+        (file_path, text_content, prompt, output_dir, debug)
+        for file_path, text_content in file_data
+    ]
 
-    # Process files in batches
     total_processed = 0
-    for processed_files in process_batches(
-        file_data, BATCH_SIZE, batch_processor, description="Extracting Equations"
-    ):
-        total_processed += len(processed_files)
+
+    if debug:
+        logger.info(
+            "Debug mode enabled, processing files sequentially without parallelization"
+        )
+        for file_path, text_content, prompt, output_dir, debug in tasks:
+            success = extract_equations(
+                file_path, text_content, prompt, output_dir, debug
+            )
+            if success:
+                total_processed += 1
+    else:
+        # Use multiprocessing for parallel execution
+        pool = Pool()
+        try:
+            for batch in batched(tasks, parallel_batch_size):
+                logger.info(f"Processing batch of {len(batch)} files in parallel")
+                batch_results = pool.starmap(extract_equations, batch)
+
+                # Count successful extractions
+                total_processed += sum(1 for success in batch_results if success)
+        finally:
+            pool.close()
+            pool.join()
 
     logger.info(
         f"✅ Equation extraction completed. Processed {total_processed} files successfully."
@@ -157,11 +225,14 @@ def generate_equation_jsons_with_validation(
     prompts_path: str,
     debug: bool = False,
     max_retries: int = 2,
+    parallel_batch_size: int = 10,
 ):
     """
-    Process all OCR .txt files with validation and retry logic.
+    Process all OCR .txt files with validation, retry logic, and parallel processing.
     """
-    logger.info(f"Generating equation JSONs from {input_txt} with validation")
+    logger.info(
+        f"Generating equation JSONs from {input_txt} with validation and parallel processing"
+    )
     output_dir.mkdir(parents=True, exist_ok=True)
     prompts = load_prompts(prompts_path)
     prompt = prompts["equation_extraction_prompt"]
@@ -175,27 +246,73 @@ def generate_equation_jsons_with_validation(
 
     logger.info(f"Found {len(file_data)} text files to process")
 
-    # Import the validation processing function
-    from scripts.utils.batch_processor import process_batch_with_validation
+    def process_single_file_with_validation(
+        file_path: Path, text_content: str, prompt: str, output_dir: Path, debug: bool
+    ):
+        """Process a single file with validation and retry logic."""
+        for attempt in range(max_retries):
+            try:
+                success = extract_equations(
+                    file_path, text_content, prompt, output_dir, debug
+                )
 
-    # Process files with validation
+                if success:
+                    return True
+                else:
+                    logger.warning(
+                        f"File {file_path.name} extraction failed on attempt {attempt + 1}"
+                    )
+                    if attempt < max_retries - 1:
+                        continue
+                    else:
+                        logger.error(
+                            f"File {file_path.name} failed extraction after {max_retries} attempts"
+                        )
+                        return False
+            except Exception as e:
+                logger.error(
+                    f"File {file_path.name} failed on attempt {attempt + 1}: {e}"
+                )
+                if attempt == max_retries - 1:
+                    logger.error(
+                        f"File {file_path.name} failed after {max_retries} attempts"
+                    )
+                    return False
+        return False
+
+    # Prepare tasks for parallel processing
+    tasks = [
+        (file_path, text_content, prompt, output_dir, debug)
+        for file_path, text_content in file_data
+    ]
+
     total_processed = 0
-    for i in range(0, len(file_data), BATCH_SIZE):
-        batch = file_data[i : i + BATCH_SIZE]
-        batch_idx = i // BATCH_SIZE
 
-        processed_files = process_batch_with_validation(
-            batch,
-            batch_idx,
-            lambda b, idx, **kwargs: process_equation_batch(
-                b, idx, prompt, output_dir, debug
-            ),
-            validation_function=validate_equation_result,
-            max_retries=max_retries,
+    if debug:
+        logger.info(
+            "Debug mode enabled, processing files sequentially without parallelization"
         )
+        for file_path, text_content, prompt, output_dir, debug in tasks:
+            success = process_single_file_with_validation(
+                file_path, text_content, prompt, output_dir, debug
+            )
+            if success:
+                total_processed += 1
+    else:
+        # Use multiprocessing for parallel execution
+        pool = Pool()
+        try:
+            for batch in batched(tasks, parallel_batch_size):
+                logger.info(
+                    f"Processing batch of {len(batch)} files in parallel with validation"
+                )
+                batch_results = pool.starmap(process_single_file_with_validation, batch)
 
-        if processed_files:
-            total_processed += len(processed_files)
+                # Count successful extractions
+                total_processed += sum(1 for success in batch_results if success)
+        finally:
+            pool.close()
+            pool.join()
 
     logger.info(
         f"✅ Equation extraction with validation completed. Processed {total_processed} files successfully."

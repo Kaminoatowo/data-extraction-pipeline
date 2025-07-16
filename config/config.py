@@ -1,6 +1,7 @@
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+import tiktoken
 from openai import OpenAI
 
 load_dotenv()
@@ -16,8 +17,9 @@ OUTPUT_DIR = BASE_DIR / "data"
 
 MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-# MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4o-mini")  # Default to gpt-4o-mini if not set
-MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4.1-nano")  # Default to gpt-4.1-nano if not set
+MODEL_NAME = os.getenv(
+    "MODEL_NAME", "gpt-4.1-nano"
+)  # Default to gpt-4o-mini if not set
 
 # Initialize OpenAI client (replace with your method of auth)
 if not OPENAI_API_KEY:
@@ -28,3 +30,9 @@ try:
 # openai_client = OpenAI(api_key=OPENAI_API_KEY)
 except Exception as e:
     raise ValueError(f"Error configuring OpenAI client: {e}")
+
+try:
+    tokenizer = tiktoken.encoding_for_model(MODEL_NAME)
+except KeyError:
+    # print(f"Model {MODEL_NAME} not found in tiktoken encodings. Using default.")
+    tokenizer = tiktoken.get_encoding("o200k_base")  # Fallback to

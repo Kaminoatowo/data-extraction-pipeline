@@ -1,0 +1,11 @@
+.venv
+*.log
+*.pdf
+__*__
+*.txt
+*.json
+*.jsonl
+*.yaml
+*.zip
+.env
+*.env.local
