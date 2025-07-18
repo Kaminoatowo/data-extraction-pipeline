@@ -72,16 +72,20 @@ def generate_rag_output(
         logger.debug(f"RAG prompt: {rag_message['content']}")
         logger.debug(f"Input text length: {len(text)} characters")
         return "Debug mode enabled, skipping RAG generation."
-    rag_response = openai_client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=[rag_message, {"role": "user", "content": text}],
-        temperature=0.5,
-    )
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    content = rag_response.choices[0].message.content
-    output_path.write_text(content, encoding="utf-8")
-    logger.debug(f"RAG output saved to {output_path}")
-    return content
+    try:
+        rag_response = openai_client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[rag_message, {"role": "user", "content": text}],
+            temperature=0.5,
+        )
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        content = rag_response.choices[0].message.content
+        output_path.write_text(content, encoding="utf-8")
+        logger.debug(f"RAG output saved to {output_path}")
+        return content
+    except Exception as e:
+        logger.error(f"Failed to generate RAG output for {output_path.name}: {e}")
+        return f"Error: {e}"
 
 
 def generate_cpt_output(
@@ -96,16 +100,20 @@ def generate_cpt_output(
         logger.debug(f"CPT prompt: {cpt_message['content']}")
         logger.debug(f"Input text length: {len(text)} characters")
         return "Debug mode enabled, skipping CPT generation."
-    cpt_response = openai_client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=[cpt_message, {"role": "user", "content": text}],
-        temperature=0.5,
-    )
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    content = cpt_response.choices[0].message.content
-    output_path.write_text(content, encoding="utf-8")
-    logger.debug(f"CPT output saved to {output_path}")
-    return content
+    try:
+        cpt_response = openai_client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[cpt_message, {"role": "user", "content": text}],
+            temperature=0.5,
+        )
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        content = cpt_response.choices[0].message.content
+        output_path.write_text(content, encoding="utf-8")
+        logger.debug(f"CPT output saved to {output_path}")
+        return content
+    except Exception as e:
+        logger.error(f"Failed to generate CPT output for {output_path.name}: {e}")
+        return f"Error: {e}"
 
 
 def generate_outputs_from_ocr_txt(

@@ -124,7 +124,7 @@ def generate_qa_from_text(text: str, qa_prompt: str, debug: bool) -> list:
         return []
 
 
-def generate_qa_parallel(
+def generate_qa(
     file_path: Path, text_content: str, qa_prompt: str, debug: bool
 ) -> list:
     """
@@ -219,7 +219,7 @@ def generate_qa_pairs(
             "Debug mode enabled, processing files sequentially without parallelization"
         )
         for file_path, text_content, qa_prompt, debug in tasks:
-            qa_pairs = generate_qa_parallel(file_path, text_content, qa_prompt, debug)
+            qa_pairs = generate_qa(file_path, text_content, qa_prompt, debug)
             all_qa_pairs.extend(qa_pairs)
     else:
         # Use multiprocessing for parallel execution
@@ -227,7 +227,7 @@ def generate_qa_pairs(
         try:
             for batch in batched(tasks, parallel_batch_size):
                 logger.info(f"Processing batch of {len(batch)} files in parallel")
-                batch_results = pool.starmap(generate_qa_parallel, batch)
+                batch_results = pool.starmap(generate_qa, batch)
 
                 # Flatten results from the batch
                 for qa_pairs in batch_results:
@@ -282,9 +282,7 @@ def generate_qa_pairs_with_validation(
         """Process a single file with validation and retry logic."""
         for attempt in range(max_retries):
             try:
-                qa_pairs = generate_qa_parallel(
-                    file_path, text_content, qa_prompt, debug
-                )
+                qa_pairs = generate_qa(file_path, text_content, qa_prompt, debug)
 
                 if validate_qa_result(qa_pairs):
                     return qa_pairs
