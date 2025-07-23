@@ -45,7 +45,13 @@ def generate_pretraining_text(equation_data: Dict[str, Any]) -> str:
         parts = []
         for symbol, info in symbols.items():
             desc = info["description"]
-            unit = format_units(info["unit"])
+            try:
+                unit = format_units(info["unit"])
+            except KeyError:
+                logger.warning(
+                    f"Missing 'unit' for symbol '{desc}'. Defaulting to 'dimensionless'."
+                )
+                unit = "dimensionless"
             if unit == "dimensionless":
                 parts.append(f"${symbol}$ is the {desc.lower()}")
             else:
@@ -80,7 +86,13 @@ def generate_finetuning_pair(equation_data: Dict[str, Any]) -> Dict[str, str]:
         answer += "The symbols in this equation represent:\n"
         for symbol, info in symbols.items():
             desc = info["description"]
-            unit = format_units(info["unit"])
+            try:
+                unit = format_units(info["unit"])
+            except KeyError:
+                logger.warning(
+                    f"Missing 'unit' for symbol '{desc}'. Defaulting to 'dimensionless'."
+                )
+                unit = "dimensionless"
             if unit == "dimensionless":
                 answer += f"• ${symbol}$: {desc}\n"
             else:
