@@ -1,0 +1,12 @@
+.venv
+*.log
+*.pdf
+__*__
+*.txt
+*.json
+*.jsonl
+*.yaml
+*.yml
+*.zip
+.env
+*.env*

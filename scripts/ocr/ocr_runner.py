@@ -92,10 +92,23 @@ def batch_ocr(
     logger.info(f"OCR batch processing started for {len(pdf_paths)} files.")
     model = model or load_mistral_ocr_model()
     output_txt_paths = []
+    failed_paths = []
 
     for pdf_path in pdf_paths:
-        txt_path = ocr_pdf_file(pdf_path, output_dir, model, debug)
-        output_txt_paths.append(txt_path)
+        try:
+            txt_path = ocr_pdf_file(pdf_path, output_dir, model, debug)
+            output_txt_paths.append(txt_path)
+        except Exception as e:
+            logger.error(f"Failed to process {pdf_path}: {e}")
+            failed_paths.append(pdf_path)
+
+        # Retry failed paths
+    for pdf_path in failed_paths:
+        try:
+            txt_path = ocr_pdf_file(pdf_path, output_dir, model, debug)
+            output_txt_paths.append(txt_path)
+        except Exception as e:
+            logger.error(f"Retry failed for {pdf_path}: {e}")
 
     logger.info("OCR batch processing complete.")
     return output_txt_paths

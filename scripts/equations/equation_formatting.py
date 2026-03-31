@@ -30,13 +30,60 @@ def format_units(unit: str) -> str:
     return unit
 
 
+def get_symbol_info(symbol_data: Dict[str, Any]) -> tuple[str, str]:
+    """
+    Safely extract symbol description and unit with sensible defaults.
+
+    Args:
+        symbol_data: Dictionary containing symbol information
+
+    Returns:
+        Tuple of (description, formatted_unit)
+    """
+    desc = symbol_data["description"]
+    try:
+        unit = format_units(symbol_data["unit"])
+    except KeyError:
+        logger.warning(
+            f"Missing 'unit' for symbol '{desc}'. Defaulting to 'dimensionless'."
+        )
+        unit = "dimensionless"
+    formatted_unit = format_units(unit)
+
+    return desc, formatted_unit
+
+
 def generate_pretraining_text(equation_data: Dict[str, Any]) -> str:
     """Generate a natural-language training example describing the equation."""
     equation = format_latex_equation(equation_data["equation"])
-    description = equation_data["description"]
-    symbols = equation_data.get("symbols", {})
-    conditions = equation_data.get("conditions", [])
-    source = equation_data.get("source", "Unknown Source")
+    try:
+        description = equation_data["description"]
+    except KeyError:
+        logger.warning(
+            f"Missing 'description' for equation '{equation}'. Using placeholder."
+        )
+        description = "No description available."
+    try:
+        symbols = equation_data.get("symbols", {})
+    except KeyError:
+        logger.warning(
+            f"Missing 'symbols' for equation '{equation}'. Using empty dict."
+        )
+        symbols = {}
+    try:
+        conditions = equation_data.get("conditions", [])
+    except KeyError:
+        logger.warning(
+            f"Missing 'conditions' for equation '{equation}'. Using empty list."
+        )
+        conditions = []
+    try:
+        source = equation_data.get("source", "Unknown Source")
+    except KeyError:
+        logger.warning(
+            f"Missing 'source' for equation '{equation}'. Using 'Unknown Source'."
+        )
+        source = "Unknown Source"
 
     text = f"The equation ${equation}$ represents {description.lower()} "
 
@@ -44,8 +91,21 @@ def generate_pretraining_text(equation_data: Dict[str, Any]) -> str:
         text += "In this equation, "
         parts = []
         for symbol, info in symbols.items():
-            desc = info["description"]
-            unit = format_units(info["unit"])
+            try:
+                desc = info["description"]
+            except KeyError:
+                logger.warning(
+                    f"Missing 'description' for symbol '{symbol}'. Using placeholder."
+                )
+                desc = "No description available."
+            try:
+                unit = format_units(info["unit"])
+            except KeyError:
+                logger.warning(
+                    f"Missing 'unit' for symbol '{desc}'. Defaulting to 'dimensionless'."
+                )
+                unit = "dimensionless"
+
             if unit == "dimensionless":
                 parts.append(f"${symbol}$ is the {desc.lower()}")
             else:
@@ -69,9 +129,27 @@ def generate_pretraining_text(equation_data: Dict[str, Any]) -> str:
 def generate_finetuning_pair(equation_data: Dict[str, Any]) -> Dict[str, str]:
     """Generate a QA pair for fine-tuning."""
     equation = format_latex_equation(equation_data["equation"])
-    description = equation_data["description"]
-    symbols = equation_data.get("symbols", {})
-    conditions = equation_data.get("conditions", [])
+    try:
+        description = equation_data["description"]
+    except KeyError:
+        logger.warning(
+            f"Missing 'description' for equation '{equation}'. Using placeholder."
+        )
+        description = "No description available."
+    try:
+        symbols = equation_data.get("symbols", {})
+    except KeyError:
+        logger.warning(
+            f"Missing 'symbols' for equation '{equation}'. Using empty dict."
+        )
+        symbols = {}
+    try:
+        conditions = equation_data.get("conditions", [])
+    except KeyError:
+        logger.warning(
+            f"Missing 'conditions' for equation '{equation}'. Using empty list."
+        )
+        conditions = []
 
     question = f"What does the equation ${equation}$ represent?"
     answer = f"{description} "
@@ -79,8 +157,20 @@ def generate_finetuning_pair(equation_data: Dict[str, Any]) -> Dict[str, str]:
     if symbols:
         answer += "The symbols in this equation represent:\n"
         for symbol, info in symbols.items():
-            desc = info["description"]
-            unit = format_units(info["unit"])
+            try:
+                desc = info["description"]
+            except KeyError:
+                logger.warning(
+                    f"Missing 'description' for symbol '{symbol}'. Using placeholder."
+                )
+                desc = "No description available."
+            try:
+                unit = format_units(info["unit"])
+            except KeyError:
+                logger.warning(
+                    f"Missing 'unit' for symbol '{desc}'. Defaulting to 'dimensionless'."
+                )
+                unit = "dimensionless"
             if unit == "dimensionless":
                 answer += f"• ${symbol}$: {desc}\n"
             else:

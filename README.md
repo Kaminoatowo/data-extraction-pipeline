@@ -207,4 +207,3 @@ When `--debug_mode` is enabled:
 2. Add logging for new features
 3. Update this README for new functionality
 4. Test with debug mode before production use
-

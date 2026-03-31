@@ -11,7 +11,9 @@ logger = setup_logger("equation_extraction")
 BATCH_SIZE = 3  # Process multiple files at once
 
 
-def process_equation_batch(batch, batch_idx, prompt, output_dir, debug=False):
+def process_equation_batch(
+    batch, batch_idx, prompt, output_dir, debug=False, force_reprocess=False
+):
     """
     Process a batch of text files for equation extraction.
 
@@ -21,6 +23,7 @@ def process_equation_batch(batch, batch_idx, prompt, output_dir, debug=False):
         prompt: The equation extraction prompt
         output_dir: Directory to save JSON files
         debug: Whether debug mode is enabled
+        force_reprocess: If True, reprocess files even if output already exists
 
     Returns:
         List of successfully processed file paths
@@ -30,10 +33,20 @@ def process_equation_batch(batch, batch_idx, prompt, output_dir, debug=False):
     for file_path, text_content in batch:
         logger.debug(f"Processing file: {file_path.name}")
 
+        # Check if output file already exists
+        out_path = output_dir / f"{file_path.stem}.json"
+        if out_path.exists() and not force_reprocess:
+            logger.info(
+                f"Output file {out_path} already exists, skipping {file_path.name}"
+            )
+            processed_files.append(
+                file_path
+            )  # Count as processed to avoid reprocessing
+            continue
+
         result = extract_equations_from_text(text_content, prompt, debug)
 
         if result:
-            out_path = output_dir / f"{file_path.stem}.json"
             with out_path.open("w", encoding="utf-8") as json_file:
                 json.dump(result, json_file, indent=2, ensure_ascii=False)
             logger.info(f"Saved equation JSON to {out_path}")
@@ -116,10 +129,21 @@ def validate_equation_result(result):
 
 
 def generate_equation_jsons(
-    input_txt: Path, output_dir: Path, prompts_path: str, debug: bool = False
+    input_txt: Path,
+    output_dir: Path,
+    prompts_path: str,
+    debug: bool = False,
+    force_reprocess: bool = False,
 ):
     """
     Process all OCR .txt files and generate JSON files with extracted equations using batch processing.
+
+    Args:
+        input_txt: Directory containing input text files
+        output_dir: Directory to save JSON files
+        prompts_path: Path to prompts configuration file
+        debug: Whether debug mode is enabled
+        force_reprocess: If True, reprocess files even if output already exists
     """
     logger.info(f"Generating equation JSONs from {input_txt}")
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -133,11 +157,31 @@ def generate_equation_jsons(
         logger.warning(f"No text files found in {input_txt}")
         return
 
+    # Filter out files that already have output (unless force_reprocess is True)
+    if not force_reprocess:
+        original_count = len(file_data)
+        file_data = [
+            (file_path, content)
+            for file_path, content in file_data
+            if not (output_dir / f"{file_path.stem}.json").exists()
+        ]
+        skipped_count = original_count - len(file_data)
+        if skipped_count > 0:
+            logger.info(
+                f"Skipping {skipped_count} files that already have output. Use force_reprocess=True to override."
+            )
+
+    if not file_data:
+        logger.info("All files already processed. No new files to process.")
+        return
+
     logger.info(f"Found {len(file_data)} text files to process")
 
     # Create a wrapper function for batch processing
     def batch_processor(batch, batch_idx, **kwargs):
-        return process_equation_batch(batch, batch_idx, prompt, output_dir, debug)
+        return process_equation_batch(
+            batch, batch_idx, prompt, output_dir, debug, force_reprocess
+        )
 
     # Process files in batches
     total_processed = 0
@@ -157,9 +201,18 @@ def generate_equation_jsons_with_validation(
     prompts_path: str,
     debug: bool = False,
     max_retries: int = 2,
+    force_reprocess: bool = False,
 ):
     """
     Process all OCR .txt files with validation and retry logic.
+
+    Args:
+        input_txt: Directory containing input text files
+        output_dir: Directory to save JSON files
+        prompts_path: Path to prompts configuration file
+        debug: Whether debug mode is enabled
+        max_retries: Maximum number of retries for failed batches
+        force_reprocess: If True, reprocess files even if output already exists
     """
     logger.info(f"Generating equation JSONs from {input_txt} with validation")
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -171,6 +224,24 @@ def generate_equation_jsons_with_validation(
 
     if not file_data:
         logger.warning(f"No text files found in {input_txt}")
+        return
+
+    # Filter out files that already have output (unless force_reprocess is True)
+    if not force_reprocess:
+        original_count = len(file_data)
+        file_data = [
+            (file_path, content)
+            for file_path, content in file_data
+            if not (output_dir / f"{file_path.stem}.json").exists()
+        ]
+        skipped_count = original_count - len(file_data)
+        if skipped_count > 0:
+            logger.info(
+                f"Skipping {skipped_count} files that already have output. Use force_reprocess=True to override."
+            )
+
+    if not file_data:
+        logger.info("All files already processed. No new files to process.")
         return
 
     logger.info(f"Found {len(file_data)} text files to process")
@@ -188,7 +259,7 @@ def generate_equation_jsons_with_validation(
             batch,
             batch_idx,
             lambda b, idx, **kwargs: process_equation_batch(
-                b, idx, prompt, output_dir, debug
+                b, idx, prompt, output_dir, debug, force_reprocess
             ),
             validation_function=validate_equation_result,
             max_retries=max_retries,

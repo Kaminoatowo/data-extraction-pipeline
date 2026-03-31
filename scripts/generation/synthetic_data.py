@@ -2,7 +2,7 @@ import os
 import json
 import re
 import tiktoken
-from config.config import openai_client, MODEL_NAME
+from config.config import openai_client, MODEL_NAME, tokenizer
 from scripts.utils.text_splitter import (
     count_tokens,
     load_and_split_text_files,
@@ -19,8 +19,6 @@ BATCH_SIZE = 1
 MAX_TOKENS_PER_REQUEST = 8000
 TEMPERATURE = 0.7
 MAX_OUTPUT_TOKENS = 3000
-
-tokenizer = tiktoken.encoding_for_model(MODEL_NAME)
 
 
 def build_prompt(prompt_template, batch, batch_index):
