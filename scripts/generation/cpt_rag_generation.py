@@ -5,21 +5,8 @@ from config.config import openai_client, MODEL_NAME
 from scripts.utils.logger import setup_logger
 from scripts.utils.prompt_loader import load_prompts  # adjust path as needed
 from scripts.utils.content_format import generate_pretraining
-from itertools import islice
-from multiprocessing import Pool
-
 
 logger = setup_logger("cpt_rag_generation")
-
-
-def batched(iterable, n):
-    """Yield successive n-sized batches from iterable."""
-    it = iter(iterable)
-    while True:
-        batch = list(islice(it, n))
-        if not batch:
-            break
-        yield batch
 
 
 def load_txt_files(txt_folder: Path) -> dict:
@@ -126,60 +113,26 @@ def generate_outputs_from_ocr_txt(
     """
     Generates RAG and CPT outputs for all .txt files in the OCR output directory.
     """
-
     logger.info("Starting RAG and CPT generation from OCR text.")
     prompts = load_prompts(prompts_path)
     txt_files = sorted(ocr_txt_dir.glob("*.txt"))
 
-    rag_out_path = []
-    cpt_out_path = []
-    read_text = []
     for txt_file in txt_files:
         base = txt_file.stem
         logger.info(f"Processing file: {base}")
 
         with txt_file.open("r", encoding="utf-8") as f:
             text = f.read()
-            read_text.append(text)
 
-        path = output_rag_dir / f"{base}.txt"
+        rag_out_path = output_rag_dir / f"{base}.txt"
+        cpt_out_path = output_cpt_dir / f"{base}.txt"
 
-        if not path.exists():
-            # generate_rag_output(text, prompts["rag_prompt"], rag_out_path, debug)
-            rag_out_path.append(output_rag_dir / f"{base}.txt")
+        if not rag_out_path.exists():
+            generate_rag_output(text, prompts["rag_prompt"], rag_out_path, debug)
         else:
             logger.warning(f"RAG output already exists for {base}. Skipping.")
 
-        path = output_cpt_dir / f"{base}.txt"
-
-        if not path.exists():
-            # generate_cpt_output(text, prompts["cpt_prompt"], cpt_out_path, debug)
-            cpt_out_path.append(output_cpt_dir / f"{base}.txt")
+        if not cpt_out_path.exists():
+            generate_cpt_output(text, prompts["cpt_prompt"], cpt_out_path, debug)
         else:
             logger.warning(f"CPT output already exists for {base}. Skipping.")
-
-    if not rag_out_path or not cpt_out_path:
-        logger.error("No RAG or CPT output paths planned. Exiting.")
-    else:
-        pool = Pool()
-        # Prepare tuples of (text, rag_path, cpt_path)
-        tasks = list(zip(read_text, rag_out_path, cpt_out_path))
-        for batch in batched(tasks, 10):
-            # RAG generation
-            pool.starmap(
-                generate_rag_output,
-                [
-                    (text, prompts["rag_prompt"], rag_path, debug)
-                    for text, rag_path, _ in batch
-                ],
-            )
-            # CPT generation
-            pool.starmap(
-                generate_cpt_output,
-                [
-                    (text, prompts["cpt_prompt"], cpt_path, debug)
-                    for text, _, cpt_path in batch
-                ],
-            )
-        pool.close()
-        pool.join()

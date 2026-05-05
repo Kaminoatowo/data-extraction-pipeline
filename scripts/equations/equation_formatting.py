@@ -98,6 +98,11 @@ def generate_pretraining_text(equation_data: Dict[str, Any]) -> str:
                     f"Missing 'description' for symbol '{symbol}'. Using placeholder."
                 )
                 desc = "No description available."
+            except TypeError:
+                logger.warning(
+                    f"Invalid 'description' format for symbol '{symbol}'. Using placeholder."
+                )
+                desc = "No description available."
             try:
                 unit = format_units(info["unit"])
             except KeyError:
@@ -105,7 +110,11 @@ def generate_pretraining_text(equation_data: Dict[str, Any]) -> str:
                     f"Missing 'unit' for symbol '{desc}'. Defaulting to 'dimensionless'."
                 )
                 unit = "dimensionless"
-
+            except TypeError:
+                logger.warning(
+                    f"Invalid 'unit' format for symbol '{desc}'. Defaulting to 'dimensionless'."
+                )
+                unit = "dimensionless"
             if unit == "dimensionless":
                 parts.append(f"${symbol}$ is the {desc.lower()}")
             else:

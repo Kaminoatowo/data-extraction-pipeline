@@ -12,6 +12,7 @@ A comprehensive LLM-powered pipeline for extracting, processing, and generating 
 - **Synthetic Data Generation**: Create synthetic training data
 - **Data Merging**: Combine datasets for continued pre-training (CPT) and fine-tuning (FT)
 - **Archive & Cleanup**: Backup and clean generated files
+- **Web UI**: Browser-based interface for running and monitoring the pipeline
 
 ## Prerequisites
 
@@ -30,6 +31,32 @@ A comprehensive LLM-powered pipeline for extracting, processing, and generating 
    MISTRAL_API_KEY=your_mistral_api_key
    OPENAI_API_KEY=your_openai_api_key
    ```
+
+## Web UI
+
+A browser-based interface is available as an alternative to the CLI.
+
+### Starting the server
+
+```bash
+pip install fastapi uvicorn
+uvicorn server:app --reload
+```
+
+Then open `http://localhost:8000` in your browser.
+
+### UI features
+
+- **Step selection**: Enable/disable individual pipeline steps
+- **Run options panel**:
+  - *Pages per chunk*: control PDF split size
+  - *OpenAI model*: choose from `gpt-4.1-mini`, `gpt-5-nano`, `gpt-5.4-nano`
+  - *Archive outputs on finish*: automatically archives outputs when the pipeline completes
+  - *Debug mode*: disables API calls for testing
+- **Live log stream**: real-time output from the pipeline process
+- **Clear outputs**: button that appears after a successful run to delete all generated files
+
+---
 
 ## Usage
 

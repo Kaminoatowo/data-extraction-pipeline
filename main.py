@@ -21,6 +21,11 @@ logger = setup_logger("pipeline")
 DEBUG_MODE = False  # Default debug mode is off
 
 
+def _step(step_id: str, state: str, pct: int = 0):
+    """Emit a structured sentinel line for the UI to parse."""
+    print(f"[STEP {step_id} {state} {pct}]", flush=True)
+
+
 def archive_generated_files(work_dir, output_dir, archive_dir=None):
     """Archive all generated files that would be deleted by clean_all_files."""
     if archive_dir is None:
@@ -203,21 +208,27 @@ def run_pipeline(args):
 
     # Step 1: OCR / PDF Text Extraction
     if args.run_ocr:
-        logger.info("Running OCR...")
-        pdf_chunks = sorted(split_output_dir.glob("*.pdf"))
+        _step("ocr", "running")
+        try:
+            logger.info("Running OCR...")
+            pdf_chunks = sorted(split_output_dir.glob("*.pdf"))
 
-        if not pdf_chunks:
-            logger.warning(
-                "No PDF chunks found in %s. Make sure splitting has been done.",
-                split_output_dir,
-            )
+            if not pdf_chunks:
+                logger.warning(
+                    "No PDF chunks found in %s. Make sure splitting has been done.",
+                    split_output_dir,
+                )
 
-        ocr_txt_paths = batch_ocr(pdf_chunks, ocr_output_dir, debug=DEBUG_MODE)
+            ocr_txt_paths = batch_ocr(pdf_chunks, ocr_output_dir, debug=DEBUG_MODE)
 
-        if ocr_txt_paths:
-            logger.info("OCR completed. Text files saved to: %s", ocr_output_dir)
-        else:
-            logger.error("OCR returned no output. Check model or PDF inputs.")
+            if ocr_txt_paths:
+                logger.info("OCR completed. Text files saved to: %s", ocr_output_dir)
+            else:
+                logger.error("OCR returned no output. Check model or PDF inputs.")
+            _step("ocr", "done", 100)
+        except Exception as e:
+            _step("ocr", "error")
+            logger.error("OCR step failed: %s", e)
     else:
         ocr_txt_files = sorted(ocr_output_dir.glob("*.txt"))
 
@@ -238,108 +249,142 @@ def run_pipeline(args):
 
     # Step 3: RAG Data
     if args.run_rag:
-        logger.info("Running CPT/RAG generation...")
-        generate_outputs_from_ocr_txt(
-            ocr_txt_dir=ocr_output_dir,
-            output_rag_dir=output_dir / "output_rag",
-            output_cpt_dir=output_dir / "output_cpt",
-            prompts_path=Path("config/prompts.yaml"),
-            debug=DEBUG_MODE,  # or wherever your prompts live
-        )
-        txt_folder_to_jsonl(
-            txt_folder=output_dir / "output_cpt",
-            output_jsonl=output_dir / "cpt_text.jsonl",
-        )
-        logger.info(
-            "RAG and CPT outputs generated and saved to %s and %s",
-            output_dir / "output_rag",
-            output_dir / "output_cpt",
-        )
+        _step("rag", "running")
+        try:
+            logger.info("Running CPT/RAG generation...")
+            generate_outputs_from_ocr_txt(
+                ocr_txt_dir=ocr_output_dir,
+                output_rag_dir=output_dir / "output_rag",
+                output_cpt_dir=output_dir / "output_cpt",
+                prompts_path=Path("config/prompts.yaml"),
+                debug=DEBUG_MODE,
+            )
+            txt_folder_to_jsonl(
+                txt_folder=output_dir / "output_cpt",
+                output_jsonl=output_dir / "cpt_text.jsonl",
+            )
+            logger.info(
+                "RAG and CPT outputs generated and saved to %s and %s",
+                output_dir / "output_rag",
+                output_dir / "output_cpt",
+            )
+            _step("rag", "done", 100)
+        except Exception as e:
+            _step("rag", "error")
+            logger.error("RAG step failed: %s", e)
 
     if args.run_equations:
-        logger.info("Running equation extraction...")
-        generate_equation_jsons(
-            input_txt=output_dir / "output_rag",
-            output_dir=work_dir / "datasets",
-            prompts_path=Path("config/prompts.yaml"),
-            debug=DEBUG_MODE,
-        )
-        logger.info(
-            "Equation JSONs generated and saved to %s",
-            output_dir / "equations_json",
-        )
+        _step("equations", "running")
+        try:
+            logger.info("Running equation extraction...")
+            generate_equation_jsons(
+                input_txt=output_dir / "output_rag",
+                output_dir=work_dir / "datasets",
+                prompts_path=Path("config/prompts.yaml"),
+                debug=DEBUG_MODE,
+            )
+            logger.info(
+                "Equation JSONs generated and saved to %s",
+                work_dir / "datasets",
+            )
 
-        ### TRY WITH MORE THAN ONE EQUATION
-        json_dir = work_dir / "datasets"
-        formatted_dir = output_dir / "formatted_equations"
-        format_equation_conversations(
-            json_dir,
-            formatted_dir,
-        )
-        logger.info("Formatted equations saved to %s", formatted_dir)
+            json_dir = work_dir / "datasets"
+            formatted_dir = output_dir / "formatted_equations"
+            format_equation_conversations(json_dir, formatted_dir)
+            logger.info("Formatted equations saved to %s", formatted_dir)
+            _step("equations", "done", 100)
+        except Exception as e:
+            _step("equations", "error")
+            logger.error("Equations step failed: %s", e)
 
     if args.run_synth:
-        logger.info("Starting synthetic data generation...")
-        generate_synthetic_data(
-            input_folder=output_dir / "output_rag",
-            output_file=output_dir / "synthetic_data.jsonl",
-            prompts_path=Path("config/prompts.yaml"),
-            debug=DEBUG_MODE,
-        )
-        logger.info("Synthetic data generation complete.")
+        _step("synth", "running")
+        try:
+            logger.info("Starting synthetic data generation...")
+            generate_synthetic_data(
+                input_folder=output_dir / "output_rag",
+                output_file=output_dir / "synthetic_data.jsonl",
+                prompts_path=Path("config/prompts.yaml"),
+                debug=DEBUG_MODE,
+            )
+            logger.info("Synthetic data generation complete.")
+            _step("synth", "done", 100)
+        except Exception as e:
+            _step("synth", "error")
+            logger.error("Synth step failed: %s", e)
 
     if args.run_qa:
-        logger.info("Starting Q&A pairs generation...")
-        generate_qa_pairs(
-            input_dir=output_dir / "output_rag",  # or output_cpt
-            output_dir=output_dir / "qa_pairs",
-            prompts_path=Path("config/prompts.yaml"),
-            debug=DEBUG_MODE,
-        )
-        logger.info("Q&A pairs generation complete.")
+        _step("qa", "running")
+        try:
+            logger.info("Starting Q&A pairs generation...")
+            generate_qa_pairs(
+                input_dir=output_dir / "output_rag",
+                output_dir=output_dir / "qa_pairs",
+                prompts_path=Path("config/prompts.yaml"),
+                debug=DEBUG_MODE,
+            )
+            logger.info("Q&A pairs generation complete.")
+            _step("qa", "done", 100)
+        except Exception as e:
+            _step("qa", "error")
+            logger.error("QA step failed: %s", e)
 
     if args.gen_cpt:
-        logger.info("Gathering CPT data outputs...")
-        merge_files(
-            input_paths=[
-                output_dir / "formatted_equations" / "pretraining_dataset.jsonl",
-                output_dir / "synthetic_data.jsonl",
-                output_dir / "cpt_text.jsonl",
-            ],
-            output_path=work_dir / "jsonl_files" / "new_pretraining.jsonl",
-        )
-        logger.info("CPT data generation complete.")
-        if args.input_cpt:
-            logger.info("Merging with existing CPT data...")
+        _step("gen_cpt", "running")
+        try:
+            logger.info("Gathering CPT data outputs...")
+            (work_dir / "jsonl_files").mkdir(parents=True, exist_ok=True)
             merge_files(
                 input_paths=[
-                    Path(args.input_cpt),
-                    work_dir / "jsonl_files" / "new_pretraining.jsonl",
+                    output_dir / "formatted_equations" / "pretraining_dataset.jsonl",
+                    output_dir / "synthetic_data.jsonl",
+                    output_dir / "cpt_text.jsonl",
                 ],
-                output_path=work_dir / "jsonl_files" / "merged_cpt.jsonl",
+                output_path=work_dir / "jsonl_files" / "new_pretraining.jsonl",
             )
-            logger.info("Merged CPT data saved to %s", work_dir / "jsonl_files")
+            logger.info("CPT data generation complete.")
+            if args.input_cpt:
+                logger.info("Merging with existing CPT data...")
+                merge_files(
+                    input_paths=[
+                        Path(args.input_cpt),
+                        work_dir / "jsonl_files" / "new_pretraining.jsonl",
+                    ],
+                    output_path=work_dir / "jsonl_files" / "merged_cpt.jsonl",
+                )
+                logger.info("Merged CPT data saved to %s", work_dir / "jsonl_files")
+            _step("gen_cpt", "done", 100)
+        except Exception as e:
+            _step("gen_cpt", "error")
+            logger.error("CPT merge failed: %s", e)
 
     if args.gen_ft:
-        logger.info("Gathering fine-tuning data outputs...")
-        merge_files(
-            input_paths=[
-                output_dir / "formatted_equations" / "finetuning_dataset.jsonl",
-                output_dir / "qa_pairs" / "all_qa_pairs.jsonl",
-            ],
-            output_path=work_dir / "jsonl_files" / "new_finetuning.jsonl",
-        )
-        logger.info("Fine-tuning data generation complete.")
-        if args.input_ft:
-            logger.info("Merging with existing fine-tuning data...")
+        _step("gen_ft", "running")
+        try:
+            logger.info("Gathering fine-tuning data outputs...")
+            (work_dir / "jsonl_files").mkdir(parents=True, exist_ok=True)
             merge_files(
                 input_paths=[
-                    Path(args.input_ft),
-                    work_dir / "jsonl_files" / "new_finetuning.jsonl",
+                    output_dir / "formatted_equations" / "finetuning_dataset.jsonl",
+                    output_dir / "qa_pairs" / "all_qa_pairs.jsonl",
                 ],
-                output_path=work_dir / "jsonl_files" / "merged_finetuning.jsonl",
+                output_path=work_dir / "jsonl_files" / "new_finetuning.jsonl",
             )
-            logger.info("Merged fine-tuning data saved to %s", work_dir / "jsonl_files")
+            logger.info("Fine-tuning data generation complete.")
+            if args.input_ft:
+                logger.info("Merging with existing fine-tuning data...")
+                merge_files(
+                    input_paths=[
+                        Path(args.input_ft),
+                        work_dir / "jsonl_files" / "new_finetuning.jsonl",
+                    ],
+                    output_path=work_dir / "jsonl_files" / "merged_finetuning.jsonl",
+                )
+                logger.info("Merged fine-tuning data saved to %s", work_dir / "jsonl_files")
+            _step("gen_ft", "done", 100)
+        except Exception as e:
+            _step("gen_ft", "error")
+            logger.error("FT merge failed: %s", e)
 
     logger.info("Pipeline finished.")
 

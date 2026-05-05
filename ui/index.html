@@ -1,0 +1,1403 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PDF Pipeline — Unilab AI</title>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* =========================================================================
+   Unilab Design System — Colors & Type
+   ========================================================================= */
+:root {
+  --unilab-blue: #1f4fa0;
+  --unilab-blue-deep: #173b78;
+  --unilab-blue-soft: #e8eef9;
+  --unilab-red: #c43a2f;
+  --unilab-red-deep: #962a21;
+  --early-access: #2a7af0;
+  --it-green: #008c45;
+  --it-white: #ffffff;
+  --it-red:   #cd212a;
+  --mint-50:  #effaf2;
+  --mint-100: #dff5e3;
+  --mint-200: #bfe9c8;
+  --mint-300: #95d6a4;
+  --mint-700: #1f7a3a;
+  --warning:    #e0a82e;
+  --warning-bg: #fff4d6;
+  --error:      #c43a2f;
+  --error-bg:   #fde8e6;
+  --info:       #2a7af0;
+  --info-bg:    #e6efff;
+  --ink-900: #1c2330;
+  --ink-800: #2a3445;
+  --ink-700: #3b4757;
+  --ink-600: #54627a;
+  --ink-500: #6b7888;
+  --ink-400: #8e9aab;
+  --ink-300: #b8c1cd;
+  --ink-200: #dde3eb;
+  --ink-100: #eef1f6;
+  --ink-50:  #f6f8fb;
+  --white:   #ffffff;
+  --workspace-tint: rgba(31,79,160,0.04);
+  --workspace-bg:   #f6f8fb;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Consolas', 'Menlo', monospace;
+  --fs-display: 28px;
+  --fs-h1: 22px;
+  --fs-h2: 16px;
+  --fs-h3: 14px;
+  --fs-body: 13px;
+  --fs-small: 12px;
+  --fs-tiny: 11px;
+  --lh-tight: 1.2;
+  --lh-snug: 1.3;
+  --lh-normal: 1.45;
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px;
+  --s-6: 24px; --s-8: 32px; --s-10: 40px; --s-12: 48px;
+  --r-sm: 4px; --r-md: 6px; --r-lg: 8px; --r-pill: 999px;
+  --shadow-sm: 0 1px 2px rgba(20,30,50,.06), 0 1px 1px rgba(20,30,50,.04);
+  --shadow-md: 0 8px 24px rgba(20,30,50,.10), 0 2px 6px rgba(20,30,50,.06);
+  --shadow-lg: 0 24px 60px rgba(20,30,50,.18);
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+  --dur-micro: 120ms;
+  --dur-panel: 200ms;
+  --border-thin: 1px solid var(--ink-200);
+  --border-input: 1px solid var(--ink-300);
+  --focus-ring: 0 0 0 3px rgba(31,79,160,0.15);
+  --fg1: var(--ink-900);
+  --fg2: var(--ink-700);
+  --fg3: var(--ink-500);
+  --fg-link: var(--unilab-blue);
+  --fg-link-hover: var(--unilab-blue-deep);
+  --bg-app: var(--workspace-bg);
+  --bg-surface: var(--white);
+  --bg-surface-alt: var(--ink-100);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-normal);
+  color: var(--fg1);
+  background: var(--bg-app);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  margin: 0; padding: 0;
+}
+
+h1,.h1 { font-size:var(--fs-h1);line-height:var(--lh-snug);font-weight:600;color:var(--fg1);margin:0; }
+h2,.h2 { font-size:var(--fs-h2);line-height:var(--lh-snug);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg2);margin:0; }
+h3,.h3 { font-size:var(--fs-h3);line-height:var(--lh-snug);font-weight:600;color:var(--fg1);margin:0; }
+
+code,kbd,.mono { font-family:var(--font-mono);font-size:12.5px;color:var(--ink-800); }
+::selection { background:var(--unilab-blue-soft);color:var(--ink-900); }
+
+/* =========================================================================
+   PDF Pipeline UI — Unilab AI Internal
+   ========================================================================= */
+
+.app {
+  min-height: 100vh;
+  background: var(--workspace-bg);
+  position: relative;
+  overflow: hidden;
+}
+.app::before {
+  content: "";
+  position: fixed; inset: 56px 0 0 220px;
+  background:
+    radial-gradient(ellipse at 70% 30%, rgba(31,79,160,0.06), transparent 55%),
+    radial-gradient(ellipse at 20% 90%, rgba(31,122,58,0.04), transparent 55%);
+  pointer-events: none; z-index: 0;
+}
+
+/* TopBar */
+.topbar {
+  position: fixed; top: 0; left: 0; right: 0; height: 56px;
+  background: #fff; border-bottom: 1px solid var(--ink-200);
+  display: flex; align-items: center; padding: 0 20px; gap: 16px;
+  z-index: 10;
+}
+.topbar img.logo { height: 36px; }
+.topbar .ea {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 12px; border-radius: 999px;
+  font-size: 11px; font-weight: 700; letter-spacing: .06em;
+  color: var(--unilab-red); background: var(--error-bg); border: 1px solid #f5c6c2;
+}
+.topbar .crumbs { color: var(--ink-500); font-size: 12px; display: flex; align-items: center; gap: 8px; }
+.topbar .crumbs .sep { color: var(--ink-300); }
+.topbar .crumbs .leaf { color: var(--ink-800); font-weight: 600; }
+.topbar .spacer { flex: 1; }
+.topbar .tb-item {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 10px; border-radius: 4px; cursor: pointer;
+  color: var(--ink-700); font-size: 13px;
+}
+.topbar .tb-item:hover { background: var(--ink-100); }
+.topbar .tb-item .ic { width: 16px; height: 16px; opacity: .85; }
+.topbar .env-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font-mono); font-size: 11px; color: var(--ink-700);
+  background: var(--ink-100); border: 1px solid var(--ink-200); border-radius: 999px;
+  padding: 3px 10px;
+}
+.topbar .env-pill .dot { width: 6px; height: 6px; border-radius: 999px; background: var(--mint-700); }
+.topbar .user { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.15; }
+.topbar .user .name { font-weight: 600; color: var(--ink-900); font-size: 13px; }
+.topbar .user .role { color: var(--ink-500); font-size: 11px; }
+.topbar .shield {
+  width: 28px; height: 28px; border-radius: 4px; border: 1px solid var(--ink-300);
+  display: inline-flex; align-items: center; justify-content: center; color: var(--ink-500);
+}
+
+/* Sidebar */
+.sidebar {
+  position: fixed; top: 56px; left: 0; bottom: 0; width: 220px;
+  background: #fff; border-right: 1px solid var(--ink-200);
+  padding: 16px 12px; overflow-y: auto; z-index: 5;
+}
+.sidebar .grp {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--ink-500); margin: 14px 6px 6px;
+}
+.sidebar .grp:first-child { margin-top: 0; }
+.sidebar .item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 8px; border-radius: 4px; cursor: pointer;
+  color: var(--ink-700); font-size: 13px;
+}
+.sidebar .item:hover { background: var(--ink-100); color: var(--unilab-blue); }
+.sidebar .item.active { color: var(--unilab-blue); font-weight: 600; background: var(--unilab-blue-soft); }
+.sidebar .item .ic { width: 16px; height: 16px; flex: none; display: inline-flex; }
+.sidebar .item .ic svg { width: 100%; height: 100%; stroke: currentColor; stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.sidebar .item .count { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--ink-500); }
+.sidebar .item.active .count { color: var(--unilab-blue); }
+.sidebar .run-card {
+  margin: 4px 4px 4px;
+  padding: 10px 12px;
+  border: 1px dashed var(--ink-300);
+  border-radius: 6px;
+  background: var(--ink-50);
+}
+.sidebar .run-card .t { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-700); margin-bottom: 4px; }
+.sidebar .run-card .id { font-family: var(--font-mono); font-size: 12px; color: var(--unilab-blue); font-weight: 600; }
+.sidebar .run-card .meta { font-size: 11px; color: var(--ink-500); margin-top: 2px; }
+.sidebar .run-card .bar { height: 4px; background: var(--ink-200); border-radius: 999px; margin-top: 8px; overflow: hidden; }
+.sidebar .run-card .bar-fill { height: 100%; background: var(--unilab-blue); transition: width 200ms var(--ease-out); }
+
+/* Main */
+.main {
+  margin-left: 220px; margin-top: 56px;
+  padding: 20px 24px 32px;
+  position: relative; z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(380px, 1.05fr) minmax(420px, 1.4fr) minmax(340px, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.page-hdr {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--ink-200);
+  margin-bottom: 4px;
+}
+.page-hdr .h1 { font-size: 22px; font-weight: 600; color: var(--ink-900); margin: 0; }
+.page-hdr .sub { font-size: 12px; color: var(--ink-500); margin-top: 2px; font-family: var(--font-mono); }
+.page-hdr .actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.page-hdr .stat {
+  display: flex; flex-direction: column; padding: 0 16px;
+  border-left: 1px solid var(--ink-200); line-height: 1.25;
+}
+.page-hdr .stat .k { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-500); }
+.page-hdr .stat .v { font-family: var(--font-mono); font-size: 13px; color: var(--ink-900); font-weight: 600; }
+
+/* Panel */
+.panel { background: #fff; border: 1px solid var(--ink-200); border-radius: 6px; box-shadow: var(--shadow-sm); overflow: hidden; }
+.panel + .panel { margin-top: 12px; }
+.panel-hdr {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--ink-200);
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--ink-800);
+  display: flex; align-items: center; gap: 8px;
+  background: linear-gradient(180deg, #fff, var(--ink-50));
+}
+.panel-hdr .dot { width: 6px; height: 6px; border-radius: 999px; background: var(--unilab-red); }
+.panel-hdr .right { margin-left: auto; display: flex; gap: 8px; align-items: center; text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 11px; color: var(--ink-500); }
+.panel-body { padding: 14px 16px; }
+.panel-body.tight { padding: 0; }
+
+/* Buttons */
+.btn {
+  font-family: var(--font-sans); font-size: 13px; font-weight: 600;
+  padding: 7px 14px; border-radius: 4px; cursor: pointer;
+  transition: all 120ms var(--ease-out); border: 1px solid;
+  display: inline-flex; align-items: center; gap: 6px;
+  white-space: nowrap;
+}
+.btn:disabled { cursor: not-allowed; opacity: .55; }
+.btn.primary { background: var(--unilab-blue); color: #fff; border-color: var(--unilab-blue); }
+.btn.primary:hover:not(:disabled) { background: var(--unilab-blue-deep); border-color: var(--unilab-blue-deep); }
+.btn.danger { background: #fff; color: var(--unilab-red); border-color: var(--unilab-red); }
+.btn.danger:hover:not(:disabled) { background: var(--error-bg); }
+.btn.secondary { background: #fff; color: var(--unilab-blue); border-color: var(--ink-300); }
+.btn.secondary:hover:not(:disabled) { border-color: var(--unilab-blue); color: var(--unilab-blue-deep); }
+.btn.ghost { background: transparent; color: var(--ink-700); border-color: transparent; padding: 6px 8px; }
+.btn.ghost:hover { background: var(--ink-100); color: var(--ink-900); }
+.btn.sm { padding: 4px 10px; font-size: 12px; }
+
+/* Drop zone */
+.dropzone {
+  border: 1.5px dashed var(--ink-300);
+  border-radius: 6px;
+  padding: 26px 20px;
+  text-align: center;
+  background: var(--ink-50);
+  transition: all 150ms var(--ease-out);
+  cursor: pointer;
+}
+.dropzone:hover { border-color: var(--unilab-blue); background: var(--unilab-blue-soft); }
+.dropzone.dragging { border-color: var(--unilab-blue); background: var(--unilab-blue-soft); border-style: solid; }
+.dropzone .icon { width: 36px; height: 36px; margin: 0 auto 8px; color: var(--unilab-blue); }
+.dropzone .icon svg { width: 100%; height: 100%; stroke: currentColor; stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.dropzone .t { font-size: 14px; font-weight: 600; color: var(--ink-900); }
+.dropzone .s { font-size: 12px; color: var(--ink-500); margin-top: 4px; }
+.dropzone .browse { color: var(--unilab-blue); text-decoration: underline; cursor: pointer; }
+
+/* File card */
+.file-card {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 12px; align-items: center;
+  padding: 12px 14px;
+  background: #fff; border: 1px solid var(--ink-200); border-radius: 6px;
+}
+.file-card .ico {
+  width: 36px; height: 44px;
+  background: var(--unilab-red); color: #fff;
+  border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-weight: 700; font-size: 11px; letter-spacing: .04em;
+  position: relative;
+}
+.file-card .ico::after { content: ""; position: absolute; top: 0; right: 0; width: 0; height: 0; border-style: solid; border-width: 0 8px 8px 0; border-color: transparent #fff transparent transparent; }
+.file-card .meta .name { font-weight: 600; color: var(--ink-900); font-size: 13px; word-break: break-all; line-height: 1.3; }
+.file-card .meta .sub { font-family: var(--font-mono); font-size: 11px; color: var(--ink-500); margin-top: 2px; }
+.file-card .x {
+  width: 24px; height: 24px; border-radius: 4px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--ink-500); cursor: pointer; border: 1px solid transparent;
+}
+.file-card .x:hover { background: var(--error-bg); color: var(--unilab-red); border-color: #f5c6c2; }
+
+/* Steps configurator */
+.step-row {
+  display: grid;
+  grid-template-columns: 18px 1fr auto;
+  gap: 12px; align-items: start;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ink-100);
+  cursor: pointer;
+  transition: background 120ms var(--ease-out);
+}
+.step-row:last-child { border-bottom: none; }
+.step-row:hover { background: var(--ink-50); }
+.step-row.disabled { opacity: .55; cursor: not-allowed; }
+.step-row .check {
+  width: 16px; height: 16px;
+  border: 1.5px solid var(--ink-400);
+  border-radius: 3px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #fff; margin-top: 1px; flex: none;
+  transition: all 120ms var(--ease-out);
+}
+.step-row .check.checked { background: var(--unilab-blue); border-color: var(--unilab-blue); color: #fff; }
+.step-row .check svg { width: 11px; height: 11px; stroke: currentColor; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.step-row .body .t { font-size: 13px; font-weight: 600; color: var(--ink-900); display: flex; align-items: center; gap: 6px; }
+.step-row .body .t .flag {
+  font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+  color: var(--ink-500); background: var(--ink-100); border: 1px solid var(--ink-200);
+  padding: 1px 5px; border-radius: 3px;
+}
+.step-row .body .s { font-size: 12px; color: var(--ink-500); margin-top: 3px; line-height: 1.4; }
+.step-row .body .dep { font-size: 11px; color: var(--warning); margin-top: 4px; font-weight: 500; }
+.step-row .est { font-family: var(--font-mono); font-size: 11px; color: var(--ink-500); white-space: nowrap; margin-top: 2px; }
+
+/* Options grid */
+.opt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 14px 16px; }
+.opt { display: flex; flex-direction: column; gap: 4px; }
+.opt .k { font-size: 11px; font-weight: 600; color: var(--ink-700); text-transform: uppercase; letter-spacing: .04em; }
+.opt input[type="text"], .opt input[type="number"], .opt select {
+  height: 30px; padding: 0 8px;
+  border: 1px solid var(--ink-300); border-radius: 4px;
+  font-family: var(--font-mono); font-size: 12px; color: var(--ink-900);
+  background: #fff; outline: none;
+  transition: border-color 120ms, box-shadow 120ms;
+}
+.opt input:focus, .opt select:focus { border-color: var(--unilab-blue); box-shadow: var(--focus-ring); }
+.opt-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 16px; border-top: 1px solid var(--ink-100);
+}
+.opt-row .k { font-size: 12px; color: var(--ink-700); }
+.opt-row .v { font-family: var(--font-mono); font-size: 12px; color: var(--ink-900); }
+
+/* Toggle */
+.toggle {
+  width: 32px; height: 18px; border-radius: 999px;
+  background: var(--ink-300); position: relative; cursor: pointer; transition: background 120ms;
+  flex-shrink: 0;
+}
+.toggle::after {
+  content: ""; position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; border-radius: 999px;
+  background: #fff; transition: transform 120ms;
+  box-shadow: 0 1px 2px rgba(0,0,0,.2);
+}
+.toggle.on { background: var(--unilab-blue); }
+.toggle.on::after { transform: translateX(14px); }
+
+/* Pipeline graph */
+.pipe-graph { padding: 8px 0; position: relative; }
+.pipe-step {
+  display: grid;
+  grid-template-columns: 56px 1fr 110px;
+  gap: 12px; align-items: center;
+  padding: 12px 16px 12px 14px;
+  position: relative; border-bottom: 1px solid var(--ink-100);
+  transition: background 120ms;
+}
+.pipe-step:last-child { border-bottom: none; }
+.pipe-step.active { background: var(--unilab-blue-soft); }
+.pipe-step.errored { background: var(--error-bg); }
+.pipe-step::before {
+  content: ""; position: absolute; left: 38px; top: 50%; bottom: -1px;
+  width: 1.5px; background: var(--ink-200); transform: translateY(0);
+}
+.pipe-step:last-child::before { display: none; }
+.pipe-step .marker {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+  background: #fff; border: 1.5px solid var(--ink-300); color: var(--ink-500);
+  position: relative; z-index: 1; margin-left: 8px;
+}
+.pipe-step .marker.queued { border-color: var(--ink-300); color: var(--ink-500); }
+.pipe-step .marker.running { border-color: var(--unilab-blue); color: var(--unilab-blue); background: #fff; }
+.pipe-step .marker.done { background: var(--mint-700); border-color: var(--mint-700); color: #fff; }
+.pipe-step .marker.error { background: var(--unilab-red); border-color: var(--unilab-red); color: #fff; }
+.pipe-step .marker.skipped { background: var(--ink-100); border-color: var(--ink-300); color: var(--ink-500); }
+.pipe-step .marker.running::after {
+  content: ""; position: absolute; inset: -4px; border-radius: 50%;
+  border: 1.5px solid var(--unilab-blue); border-right-color: transparent;
+  animation: spin 1.1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.pipe-step .info .name { font-size: 13px; font-weight: 600; color: var(--ink-900); display: flex; align-items: center; gap: 8px; }
+.pipe-step .info .cmd { font-family: var(--font-mono); font-size: 11px; color: var(--ink-500); margin-top: 2px; }
+.pipe-step .info .progress {
+  margin-top: 6px; display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center;
+}
+.pipe-step .info .progress .bar { height: 4px; background: var(--ink-200); border-radius: 999px; overflow: hidden; }
+.pipe-step .info .progress .bar-fill { height: 100%; background: var(--unilab-blue); transition: width 200ms var(--ease-out); }
+.pipe-step.errored .info .progress .bar-fill { background: var(--unilab-red); }
+.pipe-step .info .progress .pct { font-family: var(--font-mono); font-size: 11px; color: var(--ink-700); font-weight: 600; min-width: 36px; text-align: right; }
+.pipe-step .meta { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.3; }
+.pipe-step .meta .status-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.pipe-step .meta .status-lbl.queued { color: var(--ink-500); }
+.pipe-step .meta .status-lbl.running { color: var(--unilab-blue); }
+.pipe-step .meta .status-lbl.done { color: var(--mint-700); }
+.pipe-step .meta .status-lbl.error { color: var(--unilab-red); }
+.pipe-step .meta .status-lbl.skipped { color: var(--ink-500); }
+.pipe-step .meta .time { font-family: var(--font-mono); font-size: 11px; color: var(--ink-500); margin-top: 2px; }
+
+/* Log stream */
+.log {
+  font-family: var(--font-mono); font-size: 11.5px;
+  background: #0e1320; color: #d8e1f0;
+  padding: 12px 14px; height: 200px; overflow-y: auto; line-height: 1.5;
+}
+.log .line { display: grid; grid-template-columns: 64px 60px 1fr; gap: 10px; }
+.log .ts { color: #6c7a99; }
+.log .lvl { font-weight: 600; }
+.log .lvl.info { color: #6cabff; }
+.log .lvl.warn { color: #e0a82e; }
+.log .lvl.err  { color: #f08a82; }
+.log .lvl.ok   { color: #6dd089; }
+.log .lvl.dbg  { color: #8896b3; }
+.log .msg { color: #d8e1f0; word-break: break-word; }
+.log::-webkit-scrollbar { width: 8px; }
+.log::-webkit-scrollbar-thumb { background: #2a3445; border-radius: 4px; }
+.log-toolbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px;
+  background: var(--ink-50); border-top: 1px solid var(--ink-200); border-bottom: 1px solid var(--ink-200);
+  font-size: 11px;
+}
+.log-toolbar .lvl-pill {
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  padding: 2px 7px; border-radius: 999px; cursor: pointer; border: 1px solid transparent;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.log-toolbar .lvl-pill.on.info { background: #e6efff; color: #2a7af0; border-color: #bcd3ff; }
+.log-toolbar .lvl-pill.on.warn { background: var(--warning-bg); color: var(--warning); border-color: #f0d68b; }
+.log-toolbar .lvl-pill.on.err { background: var(--error-bg); color: var(--unilab-red); border-color: #f5c6c2; }
+.log-toolbar .lvl-pill.on.dbg { background: var(--ink-100); color: var(--ink-700); border-color: var(--ink-300); }
+.log-toolbar .lvl-pill.off { color: var(--ink-400); }
+.log-toolbar .filter-input {
+  margin-left: auto; height: 24px; padding: 0 8px;
+  border: 1px solid var(--ink-300); border-radius: 4px;
+  font-family: var(--font-mono); font-size: 11px; width: 180px; background: #fff; outline: none;
+}
+.log-toolbar .filter-input:focus { border-color: var(--unilab-blue); }
+
+/* Outputs */
+.out-cat { border-bottom: 1px solid var(--ink-100); }
+.out-cat:last-child { border-bottom: none; }
+.out-cat .hdr {
+  display: grid; grid-template-columns: 28px 1fr auto auto;
+  gap: 10px; align-items: center; padding: 10px 14px; cursor: pointer;
+}
+.out-cat .hdr:hover { background: var(--ink-50); }
+.out-cat .hdr .ic { width: 24px; height: 24px; border-radius: 4px; background: var(--unilab-blue-soft); color: var(--unilab-blue); display: flex; align-items: center; justify-content: center; }
+.out-cat .hdr .ic svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.out-cat.green .hdr .ic { background: #effaf2; color: var(--mint-700); }
+.out-cat.amber .hdr .ic { background: var(--warning-bg); color: var(--warning); }
+.out-cat.red .hdr .ic { background: var(--error-bg); color: var(--unilab-red); }
+.out-cat.purple .hdr .ic { background: #efe9fd; color: #6f4ad1; }
+.out-cat.teal .hdr .ic { background: #e3f6f5; color: #1a8a86; }
+.out-cat .hdr .info .t { font-size: 13px; font-weight: 600; color: var(--ink-900); }
+.out-cat .hdr .info .s { font-size: 11px; color: var(--ink-500); margin-top: 1px; }
+.out-cat .hdr .count {
+  font-family: var(--font-mono); font-size: 11px; color: var(--ink-700);
+  background: var(--ink-100); border: 1px solid var(--ink-200);
+  padding: 2px 8px; border-radius: 999px;
+}
+.out-cat .hdr .chev { color: var(--ink-500); transition: transform 120ms; }
+.out-cat.open .hdr .chev { transform: rotate(90deg); }
+.out-cat .files { max-height: 0; overflow: hidden; transition: max-height 200ms var(--ease-out); }
+.out-cat.open .files { max-height: 600px; }
+.out-cat .file {
+  display: grid; grid-template-columns: 18px 1fr auto auto;
+  gap: 10px; align-items: center;
+  padding: 7px 14px 7px 48px;
+  font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-700);
+  border-top: 1px solid var(--ink-100);
+}
+.out-cat .file:hover { background: var(--ink-50); cursor: pointer; }
+.out-cat .file .ext {
+  font-size: 9px; font-weight: 700; padding: 2px 4px; border-radius: 3px;
+  background: var(--ink-100); color: var(--ink-500); letter-spacing: .04em;
+}
+.out-cat .file .ext.jsonl { background: #efe9fd; color: #6f4ad1; }
+.out-cat .file .ext.json  { background: #e6efff; color: #2a7af0; }
+.out-cat .file .ext.txt   { background: #effaf2; color: var(--mint-700); }
+.out-cat .file .ext.zip   { background: var(--warning-bg); color: var(--warning); }
+.out-cat .file .name { color: var(--ink-900); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.out-cat .file .size { color: var(--ink-500); }
+.out-cat .file .dl {
+  width: 22px; height: 22px; border-radius: 4px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--ink-500); cursor: pointer;
+}
+.out-cat .file .dl:hover { background: var(--unilab-blue-soft); color: var(--unilab-blue); }
+.out-cat .file .dl svg { width: 12px; height: 12px; stroke: currentColor; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.out-cat .cat-actions { display: flex; gap: 6px; padding: 8px 14px 10px 48px; }
+.out-cat .pending { padding: 8px 14px 10px 48px; font-size: 11px; color: var(--ink-500); font-style: italic; }
+
+/* Run history */
+.history-row {
+  display: grid; grid-template-columns: 8px 1fr auto;
+  gap: 12px; align-items: center;
+  padding: 10px 14px; border-bottom: 1px solid var(--ink-100);
+  cursor: pointer; transition: background 120ms;
+}
+.history-row:hover { background: var(--ink-50); }
+.history-row .pip { width: 6px; height: 6px; border-radius: 999px; background: var(--mint-700); margin-left: 2px; }
+.history-row .pip.error { background: var(--unilab-red); }
+.history-row .pip.running { background: var(--unilab-blue); animation: pulse 1.5s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .35; } }
+.history-row .info .name { font-size: 12.5px; font-weight: 600; color: var(--ink-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.history-row .info .meta { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-500); margin-top: 2px; }
+.history-row .right { display: flex; flex-direction: column; align-items: flex-end; }
+.history-row .right .id { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-500); }
+.history-row .right .dur { font-family: var(--font-mono); font-size: 11px; color: var(--ink-700); font-weight: 600; margin-top: 2px; }
+
+/* Telemetry */
+.kv-grid { display: grid; grid-template-columns: repeat(2, 1fr); }
+.kv { padding: 12px 16px; border-right: 1px solid var(--ink-100); border-bottom: 1px solid var(--ink-100); }
+.kv:nth-child(2n) { border-right: none; }
+.kv:nth-last-child(-n+2) { border-bottom: none; }
+.kv .k { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-500); }
+.kv .v { font-family: var(--font-mono); font-size: 18px; color: var(--ink-900); font-weight: 600; margin-top: 2px; line-height: 1.2; }
+.kv .delta { font-size: 11px; color: var(--ink-500); font-family: var(--font-mono); margin-top: 2px; }
+.kv .v .unit { font-size: 11px; color: var(--ink-500); font-weight: 500; margin-left: 3px; }
+
+/* Badge */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  padding: 2px 7px; border-radius: 999px; border: 1px solid;
+}
+.badge.blue { color: var(--unilab-blue); border-color: var(--unilab-blue); background: var(--unilab-blue-soft); }
+.badge.green { color: var(--mint-700); border-color: var(--mint-200); background: var(--mint-50); }
+.badge.amber { color: var(--warning); border-color: #f0d68b; background: var(--warning-bg); }
+.badge.red { color: var(--unilab-red); border-color: #f5c6c2; background: var(--error-bg); }
+.badge.gray { color: var(--ink-700); border-color: var(--ink-300); background: var(--ink-100); }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 100;
+  background: var(--ink-900); color: #fff; padding: 10px 16px; border-radius: 6px;
+  box-shadow: var(--shadow-md); font-size: 13px; font-weight: 500;
+  display: flex; align-items: center; gap: 8px;
+  animation: toast-in 200ms var(--ease-out);
+}
+.toast.ok { background: var(--mint-700); }
+.toast.err { background: var(--unilab-red); }
+@keyframes toast-in { from { transform: translateY(8px); opacity: 0; } }
+
+/* Responsive */
+@media (max-width: 1500px) {
+  .main { grid-template-columns: minmax(360px, 1fr) minmax(420px, 1.4fr); }
+  .col-3 { grid-column: 1 / -1; }
+}
+@media (max-width: 1100px) {
+  .main { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const LOGO_B64 = "data:image/png;base64,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";
+
+// ============== Pipeline Steps definition ==============
+const PIPELINE_STEPS = [
+  { id: "ocr", name: "OCR / Text Extraction", flag: "--run_ocr", desc: "Split PDF into chunks and extract text with Mistral OCR. Outputs per-chunk .txt files.", deps: [], est: "~2–4 min" },
+  { id: "rag", name: "RAG Generation", flag: "--run_rag", desc: "Generate retrieval-augmented data and CPT text from OCR output.", deps: ["ocr"], est: "~3–6 min" },
+  { id: "equations", name: "Equation Extraction", flag: "--run_equations", desc: "Extract mathematical equations as JSON, then format as conversation pairs.", deps: ["rag"], est: "~1–3 min" },
+  { id: "qa", name: "Q&A Generation", flag: "--run_qa", desc: "Generate question-answer pairs from RAG output for fine-tuning.", deps: ["rag"], est: "~2–5 min" },
+  { id: "synth", name: "Synthetic Data Generation", flag: "--run_synth", desc: "Generate synthetic training data from RAG output. JSONL.", deps: ["rag"], est: "~4–8 min" },
+  { id: "gen_cpt", name: "CPT Dataset Merge", flag: "--gen_cpt", desc: "Merge equations + synthetic + CPT text into pretraining JSONL.", deps: ["equations", "synth"], est: "~10 s" },
+  { id: "gen_ft", name: "FT Dataset Merge", flag: "--gen_ft", desc: "Merge equations + Q&A pairs into fine-tuning JSONL.", deps: ["equations", "qa"], est: "~10 s" },
+];
+
+// ============== Output Categories ==============
+const OUTPUT_CATEGORIES = [
+  { id: "ocr", color: "blue", title: "OCR Text", path: "data/ocr_output/", desc: "Extracted text per PDF chunk",
+    icon: <><path d="M5 4h10l4 4v12H5z"/><path d="M9 13h6M9 16h4M14 4v4h4"/></>, sourceStep: "ocr" },
+  { id: "rag", color: "purple", title: "RAG Data", path: "data/outputs/output_rag/", desc: "Retrieval-augmented generation outputs",
+    icon: <><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></>, sourceStep: "rag" },
+  { id: "qa", color: "teal", title: "Q&A Pairs", path: "data/outputs/qa_pairs/", desc: "Question-answer training pairs",
+    icon: <><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 015 0c0 2-2.5 2-2.5 4M12 17h.01"/></>, sourceStep: "qa" },
+  { id: "equations", color: "amber", title: "Equations", path: "data/outputs/formatted_equations/", desc: "Extracted & formatted equations",
+    icon: <><path d="M5 4h14M5 12h14M5 20h14"/><path d="M8 8l3 8M16 8l-3 8" strokeWidth="1.4"/></>, sourceStep: "equations" },
+  { id: "synth", color: "green", title: "Synthetic Data", path: "data/outputs/synthetic_data.jsonl", desc: "Synthetic training records",
+    icon: <><path d="M12 2v6l5 3-5 3v6"/><path d="M7 7l5 3 5-3M7 17l5-3 5 3"/></>, sourceStep: "synth" },
+  { id: "merged", color: "red", title: "Merged Datasets", path: "data/jsonl_files/", desc: "Final CPT & FT JSONL — ready for training",
+    icon: <><path d="M3 6h6l3 3h9v9H3z"/><path d="M9 13h6M12 10v6"/></>, sourceStep: "gen_cpt" },
+];
+
+// ============== Run history (static placeholder) ==============
+const HISTORY = [
+  { id: "run_4f2a91", name: "Bitzer_RX_Compressor_Manual.pdf", date: "2026-04-29 09:11", state: "done", duration: "12m 04s", steps: 7, pages: 124 },
+  { id: "run_4f2a3c", name: "Daikin_VRV_X_Refrigerant_Guide.pdf", date: "2026-04-29 08:09", state: "done", duration: "8m 41s", steps: 5, pages: 88 },
+  { id: "run_4f1b08", name: "Eurovent_Cert_Specs_2026.pdf", date: "2026-04-28 16:48", state: "error", duration: "3m 22s", steps: 7, pages: 256 },
+  { id: "run_4f0d77", name: "ASHRAE_Handbook_Ch5_HX.pdf", date: "2026-04-28 14:15", state: "done", duration: "21m 11s", steps: 7, pages: 412 },
+  { id: "run_4ed3a2", name: "Carel_Heos_Sistema_Manuale.pdf", date: "2026-04-27 11:02", state: "done", duration: "9m 54s", steps: 6, pages: 96 },
+];
+
+// ============== TopBar ==============
+function TopBar() {
+  return (
+    <header className="topbar">
+      <img className="logo" src={LOGO_B64} alt="UNILAB" />
+      <span className="ea"># INTERNAL TOOL</span>
+      <span className="crumbs">
+        <span>AI Team</span>
+        <span className="sep">/</span>
+        <span>Data Tooling</span>
+        <span className="sep">/</span>
+        <span className="leaf">PDF Extraction Pipeline</span>
+      </span>
+      <span className="spacer" />
+      <span className="env-pill" title="API status">
+        <span className="dot" />
+        OpenAI · Mistral · OK
+      </span>
+      <span className="tb-item" title="Documentation">
+        <svg className="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 4h12a4 4 0 014 4v12H8a4 4 0 01-4-4V4z"/><path d="M8 8h8M8 12h8M8 16h5"/>
+        </svg>
+        Docs
+      </span>
+      <div className="user">
+        <span className="name">Jacopo Cocomello</span>
+        <span className="role">AI Team · Padova</span>
+      </div>
+      <span className="shield" title="Account">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6">
+          <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/>
+        </svg>
+      </span>
+    </header>
+  );
+}
+
+// ============== Sidebar ==============
+const SBI = ({ children }) => (
+  <span className="ic"><svg viewBox="0 0 24 24">{children}</svg></span>
+);
+
+function Sidebar({ active, onNav, runningRun }) {
+  const items = [
+    { grp: "Pipeline" },
+    { id: "run",     label: "Run",             icon: <><circle cx="12" cy="12" r="9"/><path d="M10 9l5 3-5 3z"/></> },
+    { id: "monitor", label: "Monitor",         icon: <><path d="M3 12h4l3-7 4 14 3-7h4"/></>, count: runningRun ? "1" : null },
+    { id: "outputs", label: "Outputs",         icon: <><path d="M3 7h6l2 2h10v10H3z"/></> },
+    { id: "history", label: "History",         icon: <><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></>, count: "47" },
+    { grp: "Datasets" },
+    { id: "cpt",     label: "CPT — Pretraining", icon: <><path d="M4 5h16M4 12h16M4 19h10"/></>, count: "12" },
+    { id: "ft",      label: "FT — Fine-tuning",  icon: <><path d="M5 3v18M19 3v18M5 12h14"/></>, count: "8" },
+    { id: "archive", label: "Archives",          icon: <><rect x="3" y="6" width="18" height="14" rx="1"/><path d="M3 10h18M10 14h4"/></>, count: "31" },
+    { grp: "Configuration" },
+    { id: "prompts", label: "Prompts",          icon: <><path d="M4 5h16v12H8l-4 4z"/></> },
+    { id: "models",  label: "Models & Keys",    icon: <><circle cx="12" cy="12" r="3"/><path d="M19.4 15a8 8 0 00.5-3 8 8 0 00-.5-3l2.1-1.6-2-3.4-2.5 1a8 8 0 00-2.6-1.5L14 0h-4l-.4 3.5A8 8 0 007 5L4.5 4l-2 3.4L4.6 9a8 8 0 00-.5 3 8 8 0 00.5 3l-2.1 1.6 2 3.4 2.5-1A8 8 0 007 20l.4 3.5h4L12 20a8 8 0 002.5-1l2.5 1 2-3.4z"/></> },
+  ];
+
+  return (
+    <aside className="sidebar">
+      {runningRun && (
+        <div className="run-card">
+          <div className="t">Active Run</div>
+          <div className="id">{runningRun.id}</div>
+          <div className="meta">{runningRun.status} · {runningRun.elapsed}</div>
+          <div className="bar"><div className="bar-fill" style={{width: runningRun.pct + "%"}} /></div>
+        </div>
+      )}
+      {items.map((it, i) => {
+        if (it.grp) return <div key={i} className="grp">{it.grp}</div>;
+        const cls = ["item", active === it.id && "active"].filter(Boolean).join(" ");
+        return (
+          <div key={i} className={cls} onClick={() => onNav(it.id)}>
+            <SBI>{it.icon}</SBI>
+            {it.label}
+            {it.count && <span className="count">{it.count}</span>}
+          </div>
+        );
+      })}
+    </aside>
+  );
+}
+
+// ============== StepsConfigurator ==============
+function StepsConfigurator({ enabled, onToggle }) {
+  const stepIsBlocked = (s) => s.deps.some((d) => !enabled[d]);
+  return (
+    <div className="panel-body tight">
+      {PIPELINE_STEPS.map((s) => {
+        const blocked = stepIsBlocked(s);
+        const checked = !!enabled[s.id];
+        return (
+          <div key={s.id} className={"step-row" + (blocked && !checked ? " disabled" : "")}
+               onClick={() => !blocked && onToggle(s.id)}>
+            <span className={"check" + (checked ? " checked" : "")}>
+              {checked && <svg viewBox="0 0 16 16"><path d="M3 8.5L6.5 12L13 4.5"/></svg>}
+            </span>
+            <div className="body">
+              <div className="t">
+                {s.name}
+                <span className="flag">{s.flag}</span>
+              </div>
+              <div className="s">{s.desc}</div>
+              {blocked && !checked && (
+                <div className="dep">
+                  Requires: {s.deps.filter((d) => !enabled[d]).map((d) => PIPELINE_STEPS.find((x) => x.id === d).name).join(", ")}
+                </div>
+              )}
+            </div>
+            <div className="est">{s.est}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ============== PipelineGraph ==============
+function fmtTime(s) {
+  if (s == null) return "—";
+  if (s < 60) return s.toFixed(0) + "s";
+  return Math.floor(s / 60) + "m " + (s % 60).toFixed(0) + "s";
+}
+
+function PipelineGraph({ steps, statuses }) {
+  return (
+    <div className="pipe-graph">
+      {steps.map((s, i) => {
+        const st = statuses[s.id] || { state: "queued" };
+        const stateLbl = { queued: "Queued", running: "Running", done: "Complete", error: "Failed", skipped: "Skipped" }[st.state];
+        return (
+          <div key={s.id} className={"pipe-step" + (st.state === "running" ? " active" : "") + (st.state === "error" ? " errored" : "")}>
+            <div className={"marker " + st.state}>
+              {st.state === "done" && <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8.5L6.5 12L13 4.5"/></svg>}
+              {st.state === "error" && <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>}
+              {st.state === "skipped" && <span>—</span>}
+              {(st.state === "queued" || st.state === "running") && <span>{i + 1}</span>}
+            </div>
+            <div className="info">
+              <div className="name">
+                {s.name}
+                {st.state === "running" && st.note && <span className="badge blue">{st.note}</span>}
+                {st.state === "error" && <span className="badge red">Retry</span>}
+              </div>
+              <div className="cmd">$ python main.py {s.flag}</div>
+              {(st.state === "running" || st.state === "done" || st.state === "error") && (
+                <div className="progress">
+                  <div className="bar"><div className="bar-fill" style={{width: (st.pct || 0) + "%"}} /></div>
+                  <div className="pct">{(st.pct || 0).toFixed(0)}%</div>
+                </div>
+              )}
+            </div>
+            <div className="meta">
+              <span className={"status-lbl " + st.state}>{stateLbl}</span>
+              <span className="time">
+                {st.state === "running" && st.elapsed != null && fmtTime(st.elapsed)}
+                {st.state === "done" && st.elapsed != null && fmtTime(st.elapsed)}
+                {st.state === "error" && "after " + fmtTime(st.elapsed || 0)}
+                {st.state === "queued" && (s.est || "")}
+                {st.state === "skipped" && "skipped"}
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ============== LogPanel ==============
+function LogPanel({ logs, levels, onToggleLevel, filter, onFilter }) {
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
+  }, [logs.length]);
+
+  const visible = logs.filter((l) =>
+    levels[l.lvl] !== false &&
+    (!filter || l.msg.toLowerCase().includes(filter.toLowerCase()))
+  );
+
+  return (
+    <>
+      <div className="log-toolbar">
+        {["info", "warn", "err", "dbg"].map((lvl) => (
+          <span key={lvl} className={"lvl-pill " + (levels[lvl] !== false ? "on " + lvl : "off")}
+                onClick={() => onToggleLevel(lvl)}>
+            {lvl}
+          </span>
+        ))}
+        <input className="filter-input" type="text" placeholder="filter…" value={filter}
+               onChange={(e) => onFilter(e.target.value)} />
+      </div>
+      <div className="log" ref={ref}>
+        {visible.map((l, i) => (
+          <div key={i} className="line">
+            <span className="ts">{l.ts}</span>
+            <span className={"lvl " + l.lvl}>{l.lvl.toUpperCase()}</span>
+            <span className="msg">{l.msg}</span>
+          </div>
+        ))}
+        {visible.length === 0 && (
+          <div style={{color:"#6c7a99",fontStyle:"italic",padding:"8px 0"}}>
+            {logs.length === 0 ? "Awaiting run start…" : "No log entries match filter."}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+// ============== OutputsPanel ==============
+function OutputsPanel({ statuses, onDownload, onDownloadAll, outputFiles }) {
+  const [open, setOpen] = React.useState({ merged: true, ocr: false, rag: false, qa: false, equations: false, synth: false });
+  return (
+    <div className="panel-body tight">
+      {OUTPUT_CATEGORIES.map((cat) => {
+        const st = statuses[cat.sourceStep] || { state: "queued" };
+        const ready = st.state === "done";
+        const files = ready ? (outputFiles[cat.id] || []) : [];
+        const isOpen = open[cat.id];
+        return (
+          <div key={cat.id} className={"out-cat " + cat.color + (isOpen ? " open" : "")}>
+            <div className="hdr" onClick={() => setOpen({ ...open, [cat.id]: !isOpen })}>
+              <div className="ic"><svg viewBox="0 0 24 24">{cat.icon}</svg></div>
+              <div className="info">
+                <div className="t">{cat.title}</div>
+                <div className="s">{cat.desc}</div>
+              </div>
+              <div className="count">
+                {ready ? files.length + " files" : (st.state === "running" ? "running…" : (st.state === "skipped" ? "skipped" : "pending"))}
+              </div>
+              <span className="chev">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 1l4 4-4 4"/></svg>
+              </span>
+            </div>
+            <div className="files">
+              {ready && files.map((f, i) => (
+                <div key={i} className="file" onClick={() => onDownload(cat.id, f.name)}>
+                  <span className={"ext " + f.ext}>{f.ext}</span>
+                  <span className="name">{f.name}</span>
+                  <span className="size">{f.size}</span>
+                  <span className="dl" title="Download">
+                    <svg viewBox="0 0 16 16"><path d="M8 2v9M4 8l4 4 4-4M3 14h10"/></svg>
+                  </span>
+                </div>
+              ))}
+              {ready && files.length > 0 && (
+                <div className="cat-actions">
+                  <button className="btn secondary sm" onClick={(e) => { e.stopPropagation(); onDownloadAll(cat.id); }}>
+                    <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2v9M4 8l4 4 4-4M3 14h10"/></svg>
+                    Download all (.zip)
+                  </button>
+                  <button className="btn ghost sm">Copy path</button>
+                </div>
+              )}
+              {!ready && <div className="pending">{cat.path}</div>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ============== App ==============
+function App() {
+  const [active, setActive] = React.useState("run");
+  const [file, setFile] = React.useState(null);
+  const [dragging, setDragging] = React.useState(false);
+  const [enabled, setEnabled] = React.useState({
+    ocr: true, rag: true, equations: true, qa: true, synth: true, gen_cpt: true, gen_ft: true,
+  });
+  const [statuses, setStatuses] = React.useState({});
+  const [running, setRunning] = React.useState(false);
+  const [logs, setLogs] = React.useState([]);
+  const [logLevels, setLogLevels] = React.useState({ info: true, warn: true, err: true, dbg: false });
+  const [logFilter, setLogFilter] = React.useState("");
+  const [toast, setToast] = React.useState(null);
+  const [pagesPerChunk, setPagesPerChunk] = React.useState(10);
+  const [debugMode, setDebugMode] = React.useState(false);
+  const [archiveOnFinish, setArchiveOnFinish] = React.useState(true);
+  const [model, setModel] = React.useState("gpt-4.1-mini");
+  const [currentRunId, setCurrentRunId] = React.useState(null);
+  const [outputFiles, setOutputFiles] = React.useState({});
+  const [dataStats, setDataStats] = React.useState(null);
+  const [pipelineSuccess, setPipelineSuccess] = React.useState(false);
+
+  const fileInputRef = React.useRef(null);
+  const runningRef = React.useRef(false);
+
+  const enabledSteps = PIPELINE_STEPS.filter((s) => enabled[s.id]);
+  const totalDone = Object.values(statuses).filter((s) => s.state === "done").length;
+  const overallPct = enabledSteps.length === 0 ? 0 : (totalDone / enabledSteps.length) * 100;
+  const runningStep = PIPELINE_STEPS.find((s) => statuses[s.id]?.state === "running");
+
+  const addLog = (lvl, msg) => {
+    const ts = new Date().toLocaleTimeString("it-IT", { hour12: false });
+    setLogs((l) => [...l, { ts, lvl, msg }]);
+  };
+
+  const fetchOutputs = async () => {
+    try {
+      const data = await fetch("/api/outputs").then((r) => r.json());
+      setOutputFiles(data);
+    } catch (_) {}
+  };
+
+  const fetchStats = async () => {
+    try {
+      const data = await fetch("/api/stats").then((r) => r.json());
+      setDataStats(data);
+    } catch (_) {}
+  };
+
+  React.useEffect(() => { fetchStats(); }, []);
+
+  const onFile = async (f) => {
+    if (!f) return;
+    if (!f.name.toLowerCase().endsWith(".pdf")) {
+      setToast({ kind: "err", msg: "Only .pdf files supported" });
+      return;
+    }
+    addLog("info", "Uploading: " + f.name + "…");
+    try {
+      const fd = new FormData();
+      fd.append("file", f);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      setFile({
+        name: data.name,
+        size: (f.size / (1024 * 1024)).toFixed(2) + " MB",
+        pages: data.pages,
+        serverPath: data.path,
+      });
+      setStatuses({});
+      setLogs([]);
+      addLog("info", "Uploaded: " + data.name + " (" + data.pages + " pages)");
+    } catch (err) {
+      setToast({ kind: "err", msg: "Upload failed: " + (err.message || "unknown error") });
+    }
+  };
+
+  const onDrop = (e) => {
+    e.preventDefault();
+    setDragging(false);
+    onFile(e.dataTransfer.files?.[0]);
+  };
+
+  const startRun = async () => {
+    if (!file?.serverPath) return;
+    setRunning(true);
+    runningRef.current = true;
+    setLogs([]);
+
+    const init = {};
+    PIPELINE_STEPS.forEach((s) => {
+      init[s.id] = { state: enabled[s.id] ? "queued" : "skipped", pct: 0, elapsed: 0 };
+    });
+    setStatuses(init);
+    setPipelineSuccess(false);
+
+    let run_id;
+    try {
+      const res = await fetch("/api/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pdf: file.serverPath,
+          enabled,
+          pages_per_chunk: pagesPerChunk,
+          debug_mode: debugMode,
+          archive_on_finish: archiveOnFinish,
+        }),
+      });
+      const data = await res.json();
+      run_id = data.run_id;
+    } catch (err) {
+      setRunning(false);
+      runningRef.current = false;
+      addLog("err", "Failed to start run: " + (err.message || "unknown error"));
+      setToast({ kind: "err", msg: "Failed to start pipeline" });
+      return;
+    }
+
+    setCurrentRunId(run_id);
+    addLog("info", "─────────────────────────────────────────────");
+    addLog("info", "Pipeline started · run id " + run_id);
+    addLog("info", `Input: ${file.name} (${file.pages} pages, ${file.size})`);
+    addLog("info", `Pages per chunk: ${pagesPerChunk} · Debug: ${debugMode ? "on" : "off"}`);
+    if (debugMode) addLog("warn", "Debug mode enabled — GPT API calls disabled");
+
+    const ws = new WebSocket(`ws://${location.host}/ws/${run_id}`);
+    const startTimes = {};
+
+    const timer = setInterval(() => {
+      setStatuses((s) => {
+        const next = { ...s };
+        PIPELINE_STEPS.forEach(({ id }) => {
+          if (next[id]?.state === "running")
+            next[id] = { ...next[id], elapsed: (next[id].elapsed || 0) + 0.5 };
+        });
+        return next;
+      });
+    }, 500);
+
+    ws.onmessage = ({ data: line }) => {
+      const trim = line.trim();
+
+      const stepMatch = trim.match(/^\[STEP (\w+) (\w+) (\d+)\]$/);
+      if (stepMatch) {
+        const [, id, state, pct] = stepMatch;
+        if (state === "running") startTimes[id] = Date.now();
+        const elapsed = (state === "done" && startTimes[id])
+          ? (Date.now() - startTimes[id]) / 1000
+          : 0;
+        setStatuses((s) => ({ ...s, [id]: { ...s[id], state, pct: +pct, elapsed } }));
+        return;
+      }
+
+      if (trim.startsWith("[PIPELINE DONE")) {
+        ws.close();
+        setRunning(false);
+        runningRef.current = false;
+        fetchOutputs();
+        fetchStats();
+        const ok = /\[PIPELINE DONE 0\]/.test(trim);
+        setPipelineSuccess(ok);
+        addLog(ok ? "ok" : "err", ok ? "Pipeline complete." : "Pipeline exited with error.");
+        setToast({ kind: ok ? "ok" : "err", msg: ok ? "Pipeline complete" : "Pipeline exited with error" });
+        return;
+      }
+
+      // Classify log level from Python logger format: "INFO - msg", "WARNING - msg", "ERROR - msg"
+      const lvl = /ERROR/.test(trim) ? "err"
+                : /WARNING/.test(trim) ? "warn"
+                : /✅|complete|done/i.test(trim) ? "ok" : "info";
+      addLog(lvl, trim);
+    };
+
+    ws.onerror = () => {
+      setRunning(false);
+      runningRef.current = false;
+      clearInterval(timer);
+      addLog("err", "WebSocket disconnected");
+      setToast({ kind: "err", msg: "Connection lost" });
+    };
+
+    ws.onclose = () => clearInterval(timer);
+  };
+
+  const clearOutputs = async () => {
+    try {
+      await fetch("/api/clean", { method: "POST" });
+      setPipelineSuccess(false);
+      setOutputFiles({});
+      setDataStats(null);
+      setStatuses({});
+      addLog("ok", "Outputs cleared.");
+      setToast({ kind: "ok", msg: "Outputs cleared" });
+    } catch (err) {
+      addLog("err", "Failed to clear outputs: " + (err.message || "unknown error"));
+      setToast({ kind: "err", msg: "Failed to clear outputs" });
+    }
+  };
+
+  const cancelRun = async () => {
+    runningRef.current = false;
+    setRunning(false);
+    if (currentRunId) {
+      try { await fetch(`/api/run/${currentRunId}`, { method: "DELETE" }); } catch (_) {}
+    }
+    addLog("warn", "Pipeline canceled by user");
+    setToast({ kind: "err", msg: "Run canceled" });
+  };
+
+  const resetRun = () => {
+    if (running) return;
+    setStatuses({});
+    setLogs([]);
+    setFile(null);
+    setOutputFiles({});
+    setDataStats(null);
+    setCurrentRunId(null);
+    setToast({ kind: "ok", msg: "State reset" });
+  };
+
+  const toggleStep = (id) => {
+    setEnabled((e) => {
+      const next = { ...e, [id]: !e[id] };
+      if (!next[id]) {
+        PIPELINE_STEPS.forEach((s) => { if (s.deps.includes(id)) next[s.id] = false; });
+      }
+      return next;
+    });
+  };
+
+  const onDownload = (cat, name) =>
+    window.open(`/api/download/${cat}/${encodeURIComponent(name)}`);
+  const onDownloadAll = (cat) =>
+    window.open(`/api/download-zip/${cat}`);
+
+  React.useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 2200);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  const runningRunCard = running ? {
+    id: currentRunId || "—",
+    status: runningStep ? runningStep.name : "Initializing",
+    elapsed: Math.floor(Object.values(statuses).reduce((a, s) => a + (s.elapsed || 0), 0)) + "s",
+    pct: overallPct,
+  } : null;
+
+  const outputFileCount = totalDone > 0
+    ? OUTPUT_CATEGORIES
+        .filter(c => statuses[c.sourceStep]?.state === "done")
+        .reduce((a, c) => a + (outputFiles[c.id]?.length || 0), 0)
+    : null;
+
+  return (
+    <div className="app">
+      <TopBar />
+      <Sidebar active={active} onNav={setActive} runningRun={runningRunCard} />
+      <main className="main">
+        <div className="page-hdr">
+          <div>
+            <h1 className="h1">PDF Extraction Pipeline</h1>
+            <div className="sub">main.py · v2.4.1 · {currentRunId || "—"}</div>
+          </div>
+          <div className="actions">
+            <div className="stat">
+              <span className="k">Run progress</span>
+              <span className="v">{Math.round(overallPct)}%</span>
+            </div>
+            <div className="stat">
+              <span className="k">Steps enabled</span>
+              <span className="v">{Object.values(enabled).filter(Boolean).length} / {PIPELINE_STEPS.length}</span>
+            </div>
+            <div className="stat">
+              <span className="k">Status</span>
+              <span className="v" style={{color: running ? "var(--unilab-blue)" : (totalDone > 0 ? "var(--mint-700)" : "var(--ink-700)")}}>
+                {running ? "RUNNING" : (totalDone === enabledSteps.length && totalDone > 0 ? "READY" : "IDLE")}
+              </span>
+            </div>
+            <button className="btn ghost" onClick={resetRun} disabled={running}>Reset</button>
+            {pipelineSuccess && !running && (
+              <button className="btn danger" onClick={clearOutputs}>
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 13 6"/><path d="M14 6l-1 8H3L2 6"/><path d="M6 6V4h4v2"/></svg>
+                Clear outputs
+              </button>
+            )}
+            {!running ? (
+              <button className="btn primary" onClick={startRun} disabled={!file?.serverPath || enabledSteps.length === 0}>
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M4 3l9 5-9 5z"/></svg>
+                Run pipeline
+              </button>
+            ) : (
+              <button className="btn danger" onClick={cancelRun}>
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="4" width="8" height="8" rx="1"/></svg>
+                Cancel run
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* COL 1: Configure */}
+        <div className="col-1">
+          <section className="panel">
+            <div className="panel-hdr">
+              <span className="dot" />
+              Input PDF
+              <span className="right">{file ? file.pages + " pages" : "no file"}</span>
+            </div>
+            <div className="panel-body">
+              {!file ? (
+                <div className={"dropzone" + (dragging ? " dragging" : "")}
+                     onClick={() => fileInputRef.current?.click()}
+                     onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                     onDragLeave={() => setDragging(false)}
+                     onDrop={onDrop}>
+                  <div className="icon">
+                    <svg viewBox="0 0 24 24"><path d="M12 3v12M7 8l5-5 5 5M4 17v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
+                  </div>
+                  <div className="t">Drop PDF here</div>
+                  <div className="s">or <span className="browse">browse files</span> · accepted: <code style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--ink-700)"}}>.pdf</code> · max 200 MB</div>
+                  <input ref={fileInputRef} type="file" accept=".pdf" style={{display:"none"}}
+                         onChange={(e) => onFile(e.target.files?.[0])} />
+                </div>
+              ) : (
+                <div className="file-card">
+                  <span className="ico">PDF</span>
+                  <div className="meta">
+                    <div className="name">{file.name}</div>
+                    <div className="sub">{file.pages} pages · {file.size} · staged at data/pdfs/</div>
+                  </div>
+                  <span className="x" onClick={() => setFile(null)} title="Remove">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+                  </span>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="panel">
+            <div className="panel-hdr">
+              <span className="dot" />
+              Pipeline Steps
+              <span className="right">{Object.values(enabled).filter(Boolean).length} of {PIPELINE_STEPS.length} selected</span>
+            </div>
+            <StepsConfigurator enabled={enabled} onToggle={toggleStep} />
+          </section>
+
+          <section className="panel">
+            <div className="panel-hdr">
+              <span className="dot" />
+              Run Options
+            </div>
+            <div className="opt-grid">
+              <label className="opt">
+                <span className="k">Pages per chunk</span>
+                <input type="number" min="1" max="50" value={pagesPerChunk} onChange={(e) => setPagesPerChunk(+e.target.value)} />
+              </label>
+              <label className="opt">
+                <span className="k">OpenAI model</span>
+                <select value={model} onChange={(e) => setModel(e.target.value)}>
+                  <option>gpt-4.1-mini</option>
+                  <option>gpt-5-nano</option>
+                  <option>gpt-5.4-nano</option>
+                </select>
+              </label>
+            </div>
+            <div className="opt-row">
+              <span className="k">Debug mode <span style={{color:"var(--ink-500)",fontSize:11}}>· skips GPT calls</span></span>
+              <span className={"toggle " + (debugMode ? "on" : "")} onClick={() => setDebugMode(!debugMode)} />
+            </div>
+            <div className="opt-row">
+              <span className="k">Archive outputs on finish</span>
+              <span className={"toggle " + (archiveOnFinish ? "on" : "")} onClick={() => setArchiveOnFinish(!archiveOnFinish)} />
+            </div>
+            <div className="opt-row">
+              <span className="k">Equivalent CLI</span>
+              <span className="v" style={{color:"var(--unilab-blue)",fontSize:11,wordBreak:"break-all"}}>{
+                "main.py --input_pdf … " +
+                PIPELINE_STEPS.filter(s => enabled[s.id]).map(s => s.flag).join(" ") +
+                (debugMode ? " --debug_mode" : "") +
+                ` --pages_per_chunk ${pagesPerChunk}`
+              }</span>
+            </div>
+          </section>
+        </div>
+
+        {/* COL 2: Monitor */}
+        <div className="col-2">
+          <section className="panel">
+            <div className="panel-hdr">
+              <span className="dot" />
+              Pipeline Progress
+              <span className="right">
+                {running && <span className="badge blue">Live</span>}
+                {!running && totalDone === enabledSteps.length && totalDone > 0 && <span className="badge green">Complete</span>}
+                {!running && totalDone === 0 && <span className="badge gray">Idle</span>}
+              </span>
+            </div>
+            <PipelineGraph steps={PIPELINE_STEPS} statuses={statuses} />
+          </section>
+
+          <section className="panel">
+            <div className="panel-hdr">
+              <span className="dot" />
+              Live Log
+              <span className="right">{logs.length} entries</span>
+            </div>
+            <LogPanel logs={logs} levels={logLevels}
+                      onToggleLevel={(lvl) => setLogLevels({ ...logLevels, [lvl]: !logLevels[lvl] })}
+                      filter={logFilter} onFilter={setLogFilter} />
+          </section>
+
+          <section className="panel">
+            <div className="panel-hdr">
+              <span className="dot" />
+              Run Telemetry
+            </div>
+            <div className="kv-grid">
+              <div className="kv">
+                <div className="k">Tokens · in</div>
+                <div className="v">{running || totalDone > 0 ? Math.round(124502 * (totalDone / Math.max(enabledSteps.length, 1))).toLocaleString("en-US") : "0"}<span className="unit">tok</span></div>
+              </div>
+              <div className="kv">
+                <div className="k">Tokens · out</div>
+                <div className="v">{running || totalDone > 0 ? Math.round(38211 * (totalDone / Math.max(enabledSteps.length, 1))).toLocaleString("en-US") : "0"}<span className="unit">tok</span></div>
+              </div>
+              <div className="kv">
+                <div className="k">Cost · est.</div>
+                <div className="v">€ {(0.42 * (totalDone / Math.max(enabledSteps.length, 1))).toFixed(2)}</div>
+                <div className="delta">on {model}</div>
+              </div>
+              <div className="kv">
+                <div className="k">Wall time</div>
+                <div className="v">{Math.floor(Object.values(statuses).reduce((a, s) => a + (s.elapsed || 0), 0))}<span className="unit">s</span></div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* COL 3: Outputs + History */}
+        <div className="col-3">
+          <section className="panel">
+            <div className="panel-hdr">
+              <span className="dot" />
+              Output Files
+              <span className="right">{outputFileCount !== null ? outputFileCount + " files" : "—"}</span>
+            </div>
+            <OutputsPanel statuses={statuses} onDownload={onDownload} onDownloadAll={onDownloadAll} outputFiles={outputFiles} />
+          </section>
+
+          <section className="panel">
+            <div className="panel-hdr">
+              <span className="dot" />
+              Dataset Records
+              <span className="right">
+                <span style={{cursor:"pointer",color:"var(--unilab-blue)"}} onClick={fetchStats} title="Refresh counts">↻ refresh</span>
+              </span>
+            </div>
+            <div className="kv-grid">
+              {[
+                { k: "Equations · FT",  v: dataStats?.equations_ft,  sub: "finetuning_dataset.jsonl" },
+                { k: "Equations · CPT", v: dataStats?.equations_cpt, sub: "pretraining_dataset.jsonl" },
+                { k: "Q&A Pairs",       v: dataStats?.qa_pairs,      sub: "all_qa_pairs.jsonl" },
+                { k: "Synthetic Data",  v: dataStats?.synthetic,     sub: "synthetic_data.jsonl" },
+              ].map(({ k, v, sub }) => (
+                <div key={k} className="kv">
+                  <div className="k">{k}</div>
+                  <div className="v">
+                    {v != null ? v.toLocaleString("en-US") : <span style={{fontSize:14,color:"var(--ink-400)"}}>—</span>}
+                    {v != null && <span className="unit">rec</span>}
+                  </div>
+                  <div className="delta">{sub}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="panel">
+            <div className="panel-hdr">
+              <span className="dot" />
+              Recent Runs
+              <span className="right" style={{cursor:"pointer", color:"var(--unilab-blue)"}}>View all →</span>
+            </div>
+            <div className="panel-body tight">
+              {HISTORY.map((h) => (
+                <div key={h.id} className="history-row">
+                  <span className={"pip" + (h.state === "error" ? " error" : "")} />
+                  <div className="info">
+                    <div className="name">{h.name}</div>
+                    <div className="meta">{h.date} · {h.pages}p · {h.steps}/7 steps</div>
+                  </div>
+                  <div className="right">
+                    <span className="id">{h.id}</span>
+                    <span className="dur" style={h.state === "error" ? {color:"var(--unilab-red)"} : null}>
+                      {h.state === "error" ? "FAILED" : h.duration}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      </main>
+      {toast && <div className={"toast " + (toast.kind || "")}>{toast.msg}</div>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
